@@ -3,8 +3,9 @@
 # For Python 2 support
 from __future__ import print_function
 
+import ldap
 from ldap.ldapobject import SimpleLDAPObject
-import ldap.syncrepl
+from ldap.syncrepl import SyncreplConsumer
 import ldapurl
 import shelve
 import signal
@@ -14,7 +15,7 @@ from . import exceptions
 
 __version__ = 1
 
-class Syncrepl(ldap.syncrepl.SyncreplConsumer, SimpleLDAPObject):
+class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
     '''
     WorkgroupSyncRepl is an LDAP syncrepl consumer object, focused on 
     workgroups.  Although, TBH, this can focus on pretty much any type of LDAP 
