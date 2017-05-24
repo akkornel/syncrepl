@@ -34,14 +34,19 @@ client = Syncrepl(data_path=tempdir,
 client.debug = True
 print('CLIENT SETUP COMPLETE!')
 
+count = 1
 while True:
     print('CLIENT LOOP START')
-    loop_result = client.loop()
+    loop_result = client.poll()
     print('CLIENT LOOP END')
     print("\tLoop Result:", loop_result)
     if loop_result is False:
         print('CLIENT LOOP COMPLETE!')
         break
+    count += 1
+    if count >= 5:
+        print('CALLING PLEASE_STOP')
+        client.please_stop()
 
 print('CLIENT EXIT START')
 client.unbind()
