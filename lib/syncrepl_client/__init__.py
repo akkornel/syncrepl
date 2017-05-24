@@ -10,6 +10,7 @@ import ldapurl
 import shelve
 import signal
 from sys import argv, exit
+import threading
 
 from . import exceptions
 
@@ -74,16 +75,20 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         context manager protocol instead.
         """
 
+        # Set up the thread
+        Threading.thread.__init__(self)
+
         # Set some instanace veriables.
         self.__in_refresh = True
         self.__present_uuids = []
+        self.deleted = False
+
+        # Set up please_stop with a lock
         self.__please_stop = False
+        self.__please_stop_lock = threading.Lock()
 
         # TODO: Make sure callback is a subclass or subclass instance.
         self.callback = callback
-
-        # Put our signal handler in place
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         # Open our shelves
         self.__data = shelve.open(data_path + 'data')
@@ -197,21 +202,102 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         self.__uuid_dn_map.close()
         self.__uuid_attrs.close()
         self.__data.close()
+        self.deleted = True
         return SimpleLDAPObject.unbind(self)
 
 
-    def loop(self):
+    def __del__(self):
         '''
-        Loop through 
+        The destructor exists as a last-resort attempt to clean things up
+        properly, before the object is gone.
+
+        Ideally, the client would have called `unbind` instead, or used a
+        context manager.
         '''
-        if self.__please_stop:
-            return
+        if self.deleted is not True:
+            return self.unbind()
+
+
+    def please_stop(self):
+        '''
+        Requests that the syncrepl process be cleanly shut down.  After calling
+        this method, you should continue calling poll until it returns `False`.
+        At that point, it is safe to unbind.
+
+        When running in refresh-only mode, this does nothing: Interrupting a
+        refresh is dangerous, because there is no guarantee that the updates
+        received actually happened in sequence they are being received.
+
+        This is the *only* method which is safe to call from a different
+        thread.
+        '''
+
+        self.__please_stop_lock.acquire()
+        self.__please_stop = True
+        self.__please_stop_lock.release()
+        return None
+
+
+    def poll(self):
+        '''
+        Poll the LDAP server for changes.  Returns True or False.
+
+        In refresh-only mode, returning True indicates that the refresh is
+        still in progress.  You must continue calling `poll` until False is
+        returned.  Once `False` is returned, the refresh is complete, and it is
+        safe to call `unbind`.
+
+        In refresh-and-persist mode, returning True only indicates that the
+        connection is still active: Work might or might not be taking place.
+        The `refresh_done` callback is used to indicate the completion of the
+        refresh phase and the start of the persist phase.  During the refresh
+        phase, when the connection is idle, `poll` will return True every ~3
+        seconds.  This is for single-process applications.
+
+        To safely end refresh-and-persist mode, you must call `please_stop`,
+        and then continue calling `poll` until it returns `False`.  At that
+        point, it is safe to call `unbind`.
+        '''
+
+        # Make sure we aren't running on a closed object.
+        if self.deleted:
+            raise ReferenceError
+
+        # We default poll_output to True because, if the poll times out, that
+        # causes an exception (so the variable doesn't get set).
         poll_output = True
         try:
             poll_output = self.syncrepl_poll(msgid=self.ldap_object_search,
                     all=1, timeout=3)
+        # Timeout exceptions are totally OK, and should be ignored.
         except ldap.TIMEOUT:
             pass
+
+        # Cancelled exceptions _should_ be OK, as long as `please_stop()` has
+        # previously been called.
+        except ldap.CANCELLED:
+            self.__please_stop_lock.acquire()
+            please_stop_value = self.__please_stop
+            self.__please_stop_lock.release()
+            if please_stop_value is False:
+                raise ldap.CANCELLED
+            else:
+                return False
+
+        # All other exceptions are real, and aren't caught.
+
+        # If poll_output was False, then we're done, so return
+        if poll_output is False:
+            return poll_output
+
+        # Check if we have been asked to stop.  If we have, send a cancellation.
+        self.__please_stop_lock.acquire()
+        if self.__please_stop:
+            self.cancel(self.ldap_object_search)
+        self.__please_stop_lock.release()
+
+        # Return.  The client will have to continue polling until the LDAP
+        # server is done with us.
         return poll_output
 
 
