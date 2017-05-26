@@ -189,6 +189,9 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             print('Doing simple bind...')
             self.simple_bind_s(who=ldap_url.who, cred=ldap_url.cred)
 
+        # Callback to mark a successful bind.
+        self.callback.bind_complete(self)
+
         # Before we start, we have to check if a filter was set.  If not, set the
         # default that the LDAP module uses.
         if ldap_url.filterstr is None:

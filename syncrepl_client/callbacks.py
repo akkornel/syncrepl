@@ -60,6 +60,50 @@ class BaseCallback(object):
     """
 
     @classmethod
+    def bind_complete(cls, ldap):
+        """Called to mark a successful bind to the LDAP server.
+
+        :param ldap.LDAPObject ldap: The LDAP object.
+
+        :return: None - any returned value is ignored.
+
+        This callback is used to indicate a successful bind, and to give you
+        one opportunity to interact with the LDAP server, before the connection
+        is taken over by the syncrepl search.
+
+        For example, if you want to record the bind DN (which you might not
+        know, if you are doing things like a SASL bind), or you want to
+        retrieve the schema stored on the server, this is the time to do it!
+
+        This is the very first callback to be called.  Once the callback
+        completes, the syncrepl search will begin, and other callbacks will
+        start coming in.
+
+        .. note::
+
+            Once the callback has completed, there is no guarantee that `ldap`
+            will still be a valid reference.
+
+        .. warning::
+
+            If you start any asynchronous operations (which includes searches),
+            those operations **must** be completed before this callback
+            returns.
+
+        .. warning::
+
+            Please do not unbind `ldap` from the LDAP server!
+
+        .. warning::
+
+            Once the callback completes, this LDAP connection will be used for
+            the syncrepl search.  *No other operations will be allowed!**  If you
+            want to communicate with the LDAP server after this callback
+            completes, you will need to set up a separate LDAP connection.
+        """
+        pass
+
+    @classmethod
     def refresh_done(cls):
         """Called to mark the end of the refresh phase.
 
@@ -232,9 +276,9 @@ class LoggingCallback(BaseCallback):
     machine-readable.
 
     Each callback will cause messages to be printed to the file set in
-    :attr:`dest`.  For callbacks containing DNs, the DNs are printed.  For
-    callbacks containing attribute dictionaries, each dictionary's contents are
-    printed.
+    :attr:`dest`.  For the :meth:`bind_complete` callback, the bind DN is
+    printed.  For callbacks containing DNs, the DNs are printed.  For callbacks
+    containing attribute dictionaries, each dictionary's contents are printed.
 
     For a list of callbacks, and what they mean, see :class:`BaseCallback`.
     """
@@ -246,6 +290,11 @@ class LoggingCallback(BaseCallback):
 
     Defaults to :attr:`sys.stdout`.
     """
+
+    @classmethod
+    def bind_complete(cls, ldap):
+        print('BIND COMPLETE!', file=cls.dest)
+        print("\tWE ARE:", ldap.whoami_s(), file=cls.dest)
 
     @classmethod
     def refresh_done(cls):
