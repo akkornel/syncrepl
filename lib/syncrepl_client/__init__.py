@@ -44,7 +44,7 @@ import threading
 
 from . import exceptions
 
-__version__ = '0.75
+__version__ = '0.75'
 
 class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
     '''
