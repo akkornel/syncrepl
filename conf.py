@@ -27,9 +27,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('./lib'))
 
 
 # -- General configuration ------------------------------------------------
@@ -170,7 +170,16 @@ texinfo_documents = [
 ]
 
 
+# -- Options for viewcode -------------------------------------------------
 
+# Enable viewcode
+viewcode_import = True
 
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+# -- Options for Intersphinx ----------------------------------------------
+
+# Configure mappings to pull from Python 3.
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'ldap': ('https://www.python-ldap.org/doc/html', None),
+    'ldapurl': ('https://www.python-ldap.org/doc/html', None),
+}
