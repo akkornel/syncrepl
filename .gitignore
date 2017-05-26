@@ -2,4 +2,4 @@
 .*.swn
 .*.swo
 .*.swp
-lib/syncrepl_client/__pycache__
+syncrepl_client/__pycache__
