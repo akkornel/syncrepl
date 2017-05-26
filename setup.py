@@ -11,7 +11,7 @@
 # For locations where public domain does not exist, this file is licensed
 # under the Creative Commons CC0 Public Domain Dedication.
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     version = '0.75',
@@ -24,10 +24,10 @@ setup(
 
     url = 'http://github.com/akkornel/syncrepl',
 
-    package_dir = { '': 'lib' },
+    packages = find_packages(),
 
-    requires = [
-        'ldap(>2.4.38)',
+    install_requires = [
+        'python-ldap(>2.4.38)',
     ],
 
     license = 'BSD 3-Clause',
@@ -39,6 +39,6 @@ setup(
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
-        'Topic :: System :: Systems Administration :: Authentication/Directory :: LDAP',
+        'Topic :: System :: Systems Administration :: Authentication/Directory :: LDAP'
     ]
 )
