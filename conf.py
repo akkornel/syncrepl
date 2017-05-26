@@ -183,3 +183,39 @@ intersphinx_mapping = {
     'ldap': ('https://www.python-ldap.org/doc/html', None),
     'ldapurl': ('https://www.python-ldap.org/doc/html', None),
 }
+
+# -- Options for autodoc --------------------------------------------------
+
+autodoc_default_flags = [ 'members' ]
+autoclass_content = 'class'
+autodoc_member_order = 'bysource'
+
+# We can't use Mock and MagicMock (as per Read the Docs' FAQ) because that 
+# generates hideous metaclass exceptions when the metaclass-ldaen code is 
+# imported.
+
+# The code below seems to work, by generating empty classes, which at least 
+# allow things to load.  This only works because importing these modules does 
+# not actually cause any code to execute.
+
+# NOTE that we can't use autodoc_mock_imports, because it can mess with the
+# display of base classes (when the 'show-inheritance' flag is set).
+
+class FakeObject(object):
+    pass
+
+class FakeSimpleLDAPObject(object):
+    class SimpleLDAPObject(object):
+        pass
+
+class FakeSyncreplConsumer(object):
+    class SyncreplConsumer(object):
+        pass
+
+MOCKS = {
+    'ldap': FakeObject(),
+    'ldap.ldapobject': FakeSimpleLDAPObject(),
+    'ldap.syncrepl': FakeSyncreplConsumer(),
+    'ldapurl': FakeObject()
+}
+sys.modules.update((mod_name, mod_val) for mod_name, mod_val in MOCKS.items())
