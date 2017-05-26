@@ -106,7 +106,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         """
 
         # Set up the thread
-        Threading.thread.__init__(self)
+        threading.Thread.__init__(self)
 
         # Set some instanace veriables.
         self.__in_refresh = True
