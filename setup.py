@@ -27,7 +27,7 @@ setup(
     package_dir = { '': 'lib' },
 
     requires = [
-        'python-ldap>2.4.38',
+        'ldap(>2.4.38)',
     ],
 
     license = 'BSD 3-Clause',
