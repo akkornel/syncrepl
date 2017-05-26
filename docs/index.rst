@@ -8,15 +8,12 @@ Welcome to Syncrepl Client's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+
+   Index <genindex>
 
 
 Indices and tables
 ==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
 automodule test
 
