@@ -10,6 +10,8 @@ Welcome to Syncrepl Client's documentation!
    :hidden:
    :maxdepth: 2
 
+   Callbacks <callbacks>
+
    Index <genindex>
 
 
