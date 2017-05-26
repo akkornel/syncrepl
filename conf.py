@@ -185,6 +185,7 @@ viewcode_import = True
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'ldap': ('https://www.python-ldap.org/doc/html', None),
+    'ldap.ldapobject': ('https://www.python-ldap.org/doc/html', None),
     'ldapurl': ('https://www.python-ldap.org/doc/html', None),
 }
 
