@@ -7,6 +7,7 @@ Welcome to Syncrepl Client's documentation!
 ===========================================
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
 
    Index <genindex>
