@@ -10,7 +10,6 @@ Welcome to Syncrepl Client's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-.. automodule:: syncrepl_client
 
 Indices and tables
 ==================
@@ -18,3 +17,7 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+automodule test
+
+.. automodule:: syncrepl_client
