@@ -1,23 +1,3 @@
-The contents of this repository are copywrited according to the contents of the 
-`AUTHORS` file.
-
-The code is made available under the BSD 3-Clause License.
-
-Other code is made available under the Creative Commons CC0 Public Domain Dedication.
-
-Documentation is made available under the Creative Commons
-Attribution-ShareAlike 4.0 International Public License (the CC BY-SA License).
-Code contained within documentation is made available under both the BSD
-3-Clause License, and the CC BY-SA License.
-
-To identify the license for any particular file, refer to the contents of the
-file.
-
-The text of the BSD 3-Clause License is reproduced below.  The text of the
-other licenses may be found in the file `LICENSE_others.md`.  Note that all
-three licenses are equally important, but are kept in a separate file to aid
-GitHub's irepository license-detection mechanisms.
-
 # BSD 3-Clause License
 
 Redistribution and use in source and binary forms, with or without
