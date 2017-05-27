@@ -61,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Syncrepl Client'
-copyright = '2017, A. Karl Kornel'
+copyright = 'the entities listed in the AUTHORS source file.  Licensed (code and documentation) as per the LICENSE source file'
 author = 'A. Karl Kornel'
 
 # The version info for the project you're documenting, acts as replacement for
