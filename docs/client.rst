@@ -18,4 +18,6 @@ using.  It is responsible for all LDAP operations, and will issue callbacks to
 an object you provide (see the :class:`~syncrepl_client.callbacks.BaseCallback`
 class).
 
-.. automodule:: syncrepl_client
+.. autoclass:: syncrepl_client.Syncrepl
+   :members:
+   :special-members:
