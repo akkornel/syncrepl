@@ -48,61 +48,125 @@ __version__ = '0.75'
 
 class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
     '''
-    WorkgroupSyncRepl is an LDAP syncrepl consumer object, focused on
-    workgroups.  Although, TBH, this can focus on pretty much any type of LDAP
-    group.
+    This class implements the Syncrepl client.  You should have one instance of
+    this class for each syncrepl connection.
+
+    Each class requires several items, which will be discussed here:
+
+    * **A data store**
+      
+      The Syncrepl client stores a copy of all LDAP records returned by the
+      LDAP server.  This data is stored on disk to speed up synchronization if
+      the client loses connection to the LDAP server (either intentionally or
+      not).
+      
+      The Syncrepl class writes to several files, so the class will be given a
+      `data_path`.  To come up with the actual file paths, we concatenate
+      `data_path` and our file name.  For that reason, `data_path` should
+      normally end with a slash (forward or back, depending on OS), to keep our
+      data files in its own directory.
+    
+      The data store files should be deleted any time you want a completely
+      fresh start.  The data store files will also be wiped any time the
+      software version changes.
+
+    * **A callback class**
+      
+      The callback class is an object (a class, or an instance).  The callback
+      class' methods are called when the Syncrepl client receives updates.
+
+      The complete list of callback methods is documented in
+      :class:`~syncrepl_client.callbacks.BaseCallback`.  That class is designed
+      for subclassing, because it defines each callback method, but doesn't
+      actually do anything.  So, you can subclass
+      :class:`~syncrepl_client.callbacks.BaseCallback`, and let it handle the
+      callbacks that you don't care about.
+
+      For a simple example of a callback in action, see the
+      :class:`~syncrepl_client.callbacks.LoggingCallback` class.
+
+    * **An LDAP URL**
+      
+      The LDAP URL contains all information about how the Syncrepl client
+      should connect, what credentials should be used to connect, and how the
+      search should be performed.
+
+      The :class:`~ldapurl.LDAPUrl` class is used to parse the LDAP URL.  Refer
+      to that class' documentation for information on the fields available.
+
+      If a valid data store exists, this field is *optional*; the URL will be
+      stored in the data store.  If you provide both an LDAP URL *and* a valid
+      data store, your LDAP URL will be used, *as long as* the search
+      parameters have not changed (the LDAP host and authentication information
+      can be changed).
+
+      The Callback class supports the following bind methods:
+
+      * *Anonymous bind*: Do not set a bind DN or password.
+      
+      * *Simple bind*: Set the bind DN and password as part of the URL.
+        
+        For security, it is suggested that you store the LDAP URL without
+        password, convert the URL into an object at runtime, add the password,
+        and pass the password-laden object to the constructor.
+      
+      * *GSSAPI bind*: Set the bind DN to `GSSAPI`, and do not set a password.
+        You are responsible for ensuring that you have valid Kerberos
+        credentials.
+        
+        As an extra safety mechanism, when you receive the `bind_complete`
+        callback, consider doing a "Who am I?" check against the LDAP server,
+        to make sure the bind DN is what you expected.  That will help guard
+        against expired or unexpected credentials.
+
+    Methods are defined below.  Almost all methods are documented, including
+    internal methods: Methods whose names start with `syncrepl_` are internal
+    methods, which clients **must not call**.  That being said, the methods are
+    documented here, for educational purposes.
     '''
 
     def __init__(self, data_path, callback, ldap_url=None, **kwargs):
-        """A LDAP syncrepl client.
+        """Instantiate, connect, and bind.
 
-        :param data: A path to where data files will be stored.  Data file
-        names and extensions will be appended to this value.
-        :type data: str
+        :param str data_path: A path to where data files will be stored.
 
-        :param callback: A class or instance which will receive callbacks when
-        things change.
-        :type callback: A subclass of, or instance of a subclass of,
-        SyncreplClient.
+        :param object callback: An object that receives callbacks.
 
-        :param ldap_url: A complete LDAP URL string, or an LDAPUrl object.
-        Only required when no data files exist.
-        :type ldap_url: str|LDAPUrl
+        :param ldap_url: A complete LDAP URL string, or an LDAPUrl object, or None.
 
-        :returns: Client
+        :type ldap_url: str or ldapurl.LDAPUrl or None
 
-        The constructor does all of the syncrepl client preparation.
+        :returns: A Syncrepl instance.
 
-        First, a set of shelves are opened, which are used to store state.
-        These shelves are stored at the path specified by the data parameter.
+        This is the :class:`Syncrepl` class's constructor.  In addition to
+        basic initialization, it is also responsible for making the initial
+        connection to the LDAP server, binding, and starting the syncrepl
+        search.
 
-        If you would like to ensure that all state is cleared, delete all files
-        & directories who's path starts with path.  Also, if this class's
-        version number changes, shelves created by older code will be wiped
-        when used by newer code.
+        .. note::
 
-        If no valid state is present, then ldap_url is mandatory.  This is an
-        LDAP URL string, or an LDAPUrl instance.
+            Many parts of this documentation refers to syncrepl as a "search".
+            That is because a syncrepl is initiated using an LDAP search
+            operation, to which a syncrepl "control" is attached.
 
-        If using simple bind, the bind DN is expected to be found in the
-        `bindname` URL extension, and the bind password is expected to be found
-        in the `X-BINDPW` URL extension.  These are easily accessed using
-        `LDAPURL.who` and `LDAPURL.cred`, respectively.
+        `data_path` is used to specify the prefix for the path to data storage.
+        :class:`Syncrepl` will open multiple files, whose names will be
+        appended to :obj:`data_path`.  You are responsible for making sure that
+        :obj:`data_path` is appropriate for your OS.
 
-        If using GSSAPI bind, set `bindname` to the string "GSSAPI".
-        `ldap.sasl` must be available, and it is the client's responsibility to
-        ensure that a valid Kerberos ticket exists.
+        .. note::
 
-        If state already exists, and `ldap_url` does not match the LDAP URL
-        previously provided, some checks are performed.  If the LDAP search base,
-        scope, filter, or attribute list are different, a ValueError is raised.
-        Otherwise, the new `ldap_url` is stored for future use.
+            Some basic checks may be performed on the data files.  If you use a
+            different version of software, those checks will fail, and the
+            contents will be wiped.
 
-        If state already exists, and `ldap_url` is `None`, then the LDAP URL
-        stored in state is used.
+        The `bind_complete()` callback will be called at some point during the
+        constructor's execution.
 
-        Returns a Syncrepl instance.  Call `unbund` when done, or use the
-        context manager protocol instead.
+        Returns a ready-to-use instance.  The next call you should make to the
+        instance is :obj:`poll()`.  Continue calling :obj:`poll()` until it
+        returns `False`; then you should call :obj:`unbind()`.  To request safe
+        teardown of the connection, call :obj:`please_stop()`.
         """
 
         # Set up the thread
@@ -210,6 +274,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
 
     def __enter__(self):
+        # Required for the context-manager protocol, but we don't do anything
+        # that the constructor doesn't do already.
         pass
 
 
@@ -223,15 +289,29 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
 
     def unbind(self):
-        '''
-        unbind safely saves state and disconnects from the LDAP server.
+        """Safely save state and disconnect from the LDAP server.
 
-        If you are using the Context Manager protocol, do *not* call `unbind`;
-        it will be called for you at tha appropriate time.
+        :returns: None
 
-        Otherwise, you will need to call `unbind` before your program exits, or
-        state will not be safed safely.
-        '''
+        If you have instantiated this object on your own, call `unbind` to
+        ensure that all data files are flushed to disk, and the LDAP server
+        connection is properly closed.
+
+        .. warning::
+
+          If you are using the Context Manager protocol, do *not* call `unbind`;
+          it will be called for you at the appropriate time.
+
+        .. warning::
+
+          Not all Python implementations delete objects at the same point in
+          their code.  PyPy, in particular, is very different.  Do not rely on
+          assumptions about garbage collection!
+
+        Once unbound, this instance is no longer usable, even if it hasn't been
+        deleted yet.  To start a new Syncrepl client, make a new instance of
+        this object.
+        """
         self.__uuid_dn_map.close()
         self.__uuid_attrs.close()
         self.__data.close()
@@ -240,30 +320,37 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
 
     def __del__(self):
-        '''
-        The destructor exists as a last-resort attempt to clean things up
-        properly, before the object is gone.
-
-        Ideally, the client would have called `unbind` instead, or used a
-        context manager.
-        '''
+        # Last-resort attempt to make sure things are cleaned up.
         if self.deleted is not True:
             return self.unbind()
 
 
     def please_stop(self):
-        '''
-        Requests that the syncrepl process be cleanly shut down.  After calling
-        this method, you should continue calling poll until it returns `False`.
-        At that point, it is safe to unbind.
+        """Requests the safe termination of a Syncrepl search.
+
+        :returns: None.
+
+        After calling this method, there is a set list of steps your code
+        should take:
+
+        1. Continue calling `poll()` until it returns `False`.
+
+        2. Call `unbind()` (unless you're using the Context Management protocol).
+
+        3. Stop using this instance.
 
         When running in refresh-only mode, this does nothing: Interrupting a
         refresh is dangerous, because there is no guarantee that the updates
-        received actually happened in sequence they are being received.
+        from the LDAP server are being received in any particular order.  The
+        refresh will be allowed to complete, and then it is safe to stop. 
 
-        This is the *only* method which is safe to call from a different
-        thread.
-        '''
+        When running in refresh-and-persist mode, if the refresh phase is still
+        in progress, it will be completed.  If in the persist phase, a Cancel
+        request will be sent to the LDAP server.  Operations will then continue
+        until the LDAP server confirms the operation is cancelled.
+
+        This is the *only* method which is thread-safe.
+        """
 
         self.__please_stop_lock.acquire()
         self.__please_stop = True
@@ -272,25 +359,33 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
 
     def poll(self):
-        '''
-        Poll the LDAP server for changes.  Returns True or False.
+        """Poll the LDAP server for changes.
+
+        :returns: True or False.
 
         In refresh-only mode, returning True indicates that the refresh is
-        still in progress.  You must continue calling `poll` until False is
+        still in progress.  You must continue calling `poll()` until `False` is
         returned.  Once `False` is returned, the refresh is complete, and it is
-        safe to call `unbind`.
+        safe to call `unbind()`.
 
-        In refresh-and-persist mode, returning True only indicates that the
+        In refresh-and-persist mode, returning `True` only indicates that the
         connection is still active: Work might or might not be taking place.
-        The `refresh_done` callback is used to indicate the completion of the
+        The `refresh_done()` callback is used to indicate the completion of the
         refresh phase and the start of the persist phase.  During the refresh
-        phase, when the connection is idle, `poll` will return True every ~3
+        phase, when the connection is idle, `poll()` will return `True` every ~3
         seconds.  This is for single-process applications.
 
-        To safely end refresh-and-persist mode, you must call `please_stop`,
-        and then continue calling `poll` until it returns `False`.  At that
-        point, it is safe to call `unbind`.
-        '''
+        Most callbacks will be made during the execution of `poll()`.
+
+        .. warning::
+
+          Just because `poll()` has returned, does not mean that you are in
+          sync with the LDAP server.  You must continue calling `poll()` until
+          it returns `False`.
+
+          To request safe, consistent teardown of the connection, call
+          `please_stop()`.
+        """
 
         # Make sure we aren't running on a closed object.
         if self.deleted:
@@ -335,8 +430,14 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
 
     def syncrepl_get_cookie(self):
-        '''
-        Internal Syncrepl operation.  Not for client use.
+        """Get Syncrepl cookie from data store.
+
+        :returns: bytes or None.
+
+        .. note::
+
+            This is an internal Syncrepl operation.  It is documented here for
+            educational purposes, but should **not** be called by clients.
 
         Called at the start of the syncrepl operation, to load a cookie from
         state.  If present and valid, the LDAP server will know how far behind
@@ -344,7 +445,9 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         If not present, or invalid (typically because it's too old), the LDAP
         server will start us over, as if we were a new client.
-        '''
+
+
+        """
         if 'cookie' in self.__data:
             return self.__data['cookie']
         else:
@@ -352,44 +455,70 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
 
     def syncrepl_set_cookie(self, cookie):
-        '''
-        Internal Syncrepl operation.  Not for client use.
+        """Store Syncrepl cookie in data store.
+
+        :param bytes cookie: An opaque string.
+
+        :returns: None.
+
+        .. note::
+
+            This is an internal Syncrepl operation.  It is documented here for
+            educational purposes, but should **not** be called by clients.
 
         Called regularly during syncrepl operations, to store a "cookie" from
-        the LDAP server.
-        '''
+        the LDAP server.  This cookie is presented to the LDAP server when we
+        reconnect, so that it knows how far behind we are.
+        """
         self.__data['cookie'] = cookie
 
 
     def syncrepl_refreshdone(self):
-        '''
-        Internal Syncrepl operation.  Not for client use.
+        """Mark the transition from the refresh phase to the persist phase.
+
+        :returns: None.
+
+        .. note::
+
+            This is an internal Syncrepl operation.  It is documented here for
+            educational purposes, but should **not** be called by clients.
 
         This is called when we moving from the Refresh mode into the Persist
-        mode of refresh-and-persist.
+        mode of refresh-and-persist.  This is not called in refresh-only mode.
+        """
 
-        Besides doing a callback, we update an internal tracking variable, and
-        we delete our list of present items (that's only used in the Refresh mode).
-        '''
+        # Besides doing a callback, we update an internal tracking variable, and
+        # we delete our list of present items (that's only used in the Refresh mode).
         self.callback.refresh_done()
         self.__in_refresh = False
         del self.__present_uuids
 
 
     def syncrepl_delete(self, uuids):
-        '''
-        Internal Syncrepl operation.  Not for client use.
+        """Report deletion of an LDAP entry.
 
-        Called when one or more DNs are deleted.
+        :param uuids: List of UUIDs to delete.
 
-        The one parameter is a list of DNs, which we SHOULD have in our map.
+        :type uuids: List of binary.
 
-        For each DN, we trigger a deletion callback, and then remove the UUID
-        from our mapping.
-        '''
+        :returns: None.
+
+        .. note::
+
+            This is an internal Syncrepl operation.  It is documented here for
+            educational purposes, but should **not** be called by clients.
+
+        Called when one or more entries have been deleted, *or* have changed
+        such that they are no longer in our search results.
+
+        The one parameter is a list of UUIDs, which we should already know
+        about.
+
+        Triggers a deletion callback for each UUID.
+        """
         for uuid in uuids:
             if not uuid in self.__uuid_dn_map:
-                print('WARNING: Trying to delete uuid', uuid, 'not in map!')
+                raise RuntimeError('WARNING: Trying to delete uuid', uuid, 'not in map!')
                 continue
             self.callback.record_delete(self.__uuid_dn_map[uuid])
             del self.__uuid_dn_map[uuid]
@@ -397,77 +526,97 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
 
     def syncrepl_present(self, uuids, refreshDeletes=False):
-        '''
+        """Indicate the presence or absence of an LDAP entry.
+
+        :param uuids: List of UUIDs present or absent.
+
+        :type uuids: List of bytes, or None.
+
+        :param boolean refreshDeletes: Indicates presence or absence.
+
+        :returns: None.
+
+        .. note::
+
+            This is an internal Syncrepl operation.  It is documented here for
+            educational purposes, but should **not** be called by clients.
+
         This function is used in refresh-only syncrepl, and in the refresh
-        phase of refresh-and-persist syncrepl.
+        phase of refresh-and-persist syncrepl.  It is *not* used in the persist
+        phase.
 
         As part of the syncrepl process, we get a big list of UUIDs and their
         DNs (plus attributes), from which we build a mapping (see
-        syncrepl_entry).  The first time a sync takes place (when there is no
-        valid cookie), you may be able to assume that every mapping entry
-        received is present in the directory, but that's not actually true; and
-        of course in subsequent syncs (using a valid cookie) you can't be sure
-        which entries are present and which have been deleted.
+        :obj:`syncrepl_entry()`, below).  The first time a sync takes place
+        (when there is no valid cookie), you are able to assume that every
+        mapping entry received is present in the directory; but in subsequent
+        syncs (using a valid cookie) you can't be sure which entries are
+        present and which have been deleted.  In addition, if you have a cookie
+        that is now too old, there is no way to know which entries in your data
+        store still exist in the directory.
+        
+        The "Present" messages, and the resulting calls, are used to bring us
+        back in sync with the Directory, regardless of our local state.
 
-        uuids is either a list of UUIDs or None.  refreshDeletes is a boolean.
-        To understand how the two parameters are related, it's better to look
-        at the latter parameter first.
+        `uuids` is either a list of UUIDs, or `None`.  `refreshDeletes` is a
+        boolean.  To understand how the two parameters are related, it's better
+        to look at the latter parameter first.
 
-        * If refreshDeletes is False, and uuids is a list, then uuids contains
-        a list of entries that are currently in the directory.
+        * If `refreshDeletes` is `False`, and `uuids` is a list, then `uuids`
+          contains a list of entries that are currently in the directory.
 
-        * If refreshDeletes is False, but uuids is None, then we are almost
-        synced.  We now need to go into our mapping, and remove all entries
-        that were not previously mentioned as being in the directory.
+        * If `refreshDeletes` is `False`, but `uuids` is `None`, then we are
+          almost synced.  We now need to go into our mapping, and remove all
+          entries that were not previously mentioned as being in the directory.
 
-        * If refreshDeletes is True, and we have a list, then uuids contains
-        entries that used to be in the directory, but are now gone.
+        * If `refreshDeletes` is `True`, and we have a list, then `uuids`
+          contains entries that used to be in the directory, but are now gone.
 
-        * If refreshDeletes is True, but uuids is None, then we are synced: Our
-        current mapping of UUIDs, minus those previously deleted, represents
-        the current state of the directory.
+        * If `refreshDeletes` is `True`, but `uuids` is `None`, then we are
+          synced: Our current mapping of UUIDs, minus those previously deleted,
+          represents the current state of the directory.
 
         Here is another way to think about it: The LDAP server needs to work out
         the most efficient way of relaying changes to us.  There are three ways
         of telling us what has changed:
 
-        A) "The following entries are in the directory; everything else you knew
-        about has been deleted."
+        * "The following entries are in the directory; everything else you knew
+          about has been deleted."
 
-        This is the easiest way of informing us of changes and deletions.
+          This is the easiest way of informing us of changes and deletions.
 
-        In this mode, you will receive:
+          In this mode, you will receive:
 
-        * Calls where uuids is a list and refreshDeletes is False.
+          - Calls where `uuids` is a list and `refreshDeletes` is `False`.
 
-        * A call where uuids is None and refreshDeletes is False.
+          - A call where `uuids` is `None` and `refreshDeletes` is `False`.
 
-        B) "The following entries are new, and these other entries have been
-        deleted, but everything else you know about is still in the directory."
+        * "The following entries are new, and these other entries have been
+          deleted, but everything else you know about is still in the directory."
 
-        This is the mode that is used when, since your last checkin, there have
-        been alot of additions and deletions.
+          This is the mode that is used when, since your last checkin, there have
+          been alot of additions and deletions.
 
-        In this mode, you will receive:
+          In this mode, you will receive:
 
-        * Calls where uuids is a list and refreshDeletes is False.
+          - Calls where `uuids` is a list and `refreshDeletes` is `False`.
 
-        * Calls where uuids is a list and refreshDeletes is True.
+          - Calls where `uuids` is a list and `refreshDeletes` is `True`.
 
-        * A call where uuids is None and refreshDeletes is True.
+          - A call where uuids` is `None` and `refreshDeletes` is `True`.
 
-        C) "Everything is up-to-date and there are no changes."
+        * "Everything is up-to-date and there are no changes."
 
-        When things are quiet, this is the mode that is used.
+          When things are quiet, this is the mode that is used.
 
-        In this mode, you wil receive:
+          In this mode, you wil receive:
 
-        * A call where uuids is None and refreshDeletes is True.
+          - A call where `uuids` is `None` and `refreshDeletes` is `True`.
 
-        The LDAP server chooses which mode to use (A, B, or C) when we connect
-        and present a valid cookie.  If we don't have a valid cookie, then the
-        LDAP server falls back to mode A.
-        '''
+        The LDAP server chooses which mode to use when we connect and present a
+        valid cookie.  If we don't have a valid cookie, then the LDAP server
+        falls back to mode A.
+        """
 
         if ((uuids is not None) and (refreshDeletes is False)):
             # We have a list of items which are present in the directory.
@@ -505,39 +654,60 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
 
     def syncrepl_entry(self, dn, attrs, uuid):
-        '''
+        """Report addition or modification of an LDAP entry.
+
+        :param bytes dn: The DN of the entry.
+
+        :param attrs: The entry's attributes.
+
+        :type attrs: Dict of List of bytes.
+
+        :param bytes uuid: The entry's UUID.
+
+        :returns: None.
+
+        .. note::
+
+            This is an internal Syncrepl operation.  It is documented here for
+            educational purposes, but should **not** be called by clients.
+
+        This function is called to add entries to a map of UUIDs to
+        DN/attribute-list pairs.  It is also used to change an existing DN: In
+        that case, the UUID matches an existing entry, but the DN is different.
+
         DNs are not static - they can change.  That's a problem when you are
         trying to track changes over time.  To deal with that, the LDAP server
         assigns each entry a UUID.  We then maintain a mapping of UUIDs to DNs,
         because all future syncrepl-related calls will refernce UUIDs instead
         of DNs.
 
-        This function is called to add entries to a map of UUIDs to
-        DN/attribute-list pairs.  It is also used to change an existing DN: In
-        that case, the UUID matches an existing entry, but the DN is different.
-
         In refresh-only sync, and in the refresh phase of refresh-and-persist
-        syncrepl, this function is called multiple times, interspersed with
-        calls to syncrepl_present.  If a valid cookie was provided, the server will
-        only send new/changed entries since our last checkin; otherwise, we'll
-        get a big list of entries--all of which will be present--to seed our mapping.
+        syncrepl, this method is called multiple times, interspersed with calls
+        to :obj:`syncrepl_present()`.  If a valid cookie was provided, the
+        server will only send new/changed entries since our last checkin;
+        otherwise, we'll get a big list of entries—all of which will be
+        present—to seed our mapping.
 
         In refresh-and-persist mode, everything from the previous paragraph is
-        true, but when in persist mode, we should expect to be called at random
-        times after the refresh phase completes, as the server sends us updates
-        to our mapping.
+        true, but when in the persist phase (once the refresh phase has
+        completed) we should expect to be called at random times as the server
+        sends us updates to our mapping.
 
-        NOTE: This list is *not* the list of entries present in the directory.
-        This is just a list of UUIDs and DNs.  syncrepl_present and syncrepl_delete are
-        used to specify which entries are present in the directory at any given
-        time.
+        The set of attributes is the intersection of three sets:
 
-        The list of attributes is the intersection of three sets:
+        * The populated attributes of a particular entry.
 
-        * The attributes of a particular entry.
         * The attributes you are allowed to see.
+
         * The attributes you requested in your search.
-        '''
+
+        All attribute entries are lists of binary strings.  Lists are used
+        throughout because the LDAP client does not know which attributes are
+        multi-valued, and binary strings are used because the LDAP client does
+        not know each attribute's syntax.  The client is responsible for
+        knowing the directory's schema, and casting/converting values
+        appropriately.
+        """
 
         # Check if the UUID is in our map.
         if uuid in self.__uuid_dn_map:
