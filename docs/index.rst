@@ -18,6 +18,7 @@ Welcome to Syncrepl Client's documentation!
    :hidden:
    :maxdepth: 2
 
+   Client Class <client>
    Callbacks <callbacks>
 
    Index <genindex>
@@ -28,4 +29,3 @@ Indices and tables
 
 automodule test
 
-.. automodule:: syncrepl_client
