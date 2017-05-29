@@ -47,7 +47,7 @@ from . import exceptions
 
 __version__ = '0.75'
 
-class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
+class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
     '''
     This class implements the Syncrepl client.  You should have one instance of
     this class for each syncrepl connection.
