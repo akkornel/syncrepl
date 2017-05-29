@@ -30,19 +30,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Python 3.2 or later, because of tempfile.TemporaryDirectory
-from sys import exit, version_info
-if ((version_info[0] < 3) or
-    ((version_info[0] == 3) and (version_info[1] < 2))
-):
-    print('This script requires Python 3.2 or later!')
-    exit(1)
-
 
 from syncrepl_client import Syncrepl
 from syncrepl_client.callbacks import LoggingCallback
-from sys import argv
-from tempfile import TemporaryDirectory
+from sys import argv, exit
 
 
 if len(argv) == 1:
