@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # vim: sw=4 ts=4 et
 
 # syncrepl_client installer code.
