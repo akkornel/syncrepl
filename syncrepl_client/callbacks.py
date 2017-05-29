@@ -133,7 +133,7 @@ class BaseCallback(object):
     def record_add(cls, dn, attrs):
         """Called to indicate the addition of a new LDAP record.
 
-        :param bytes dn: The DN of the added record.
+        :param str dn: The DN of the added record.
 
         :param attrs: The record's attributes.
         :type attrs: Dict of lists of bytes
@@ -172,7 +172,7 @@ class BaseCallback(object):
     def record_delete(cls, dn):
         """Called to indicate the deletion of an LDAP record.
 
-        :param bytes dn: The DN of the deleted record.
+        :param str dn: The DN of the deleted record.
 
         :return: None - any returned value is ignored.
 
@@ -189,9 +189,9 @@ class BaseCallback(object):
     def record_rename(cls, old_dn, new_dn):
         """Called to indicate a change in DN.
 
-        :param bytes old_dn: The old DN.
+        :param str old_dn: The old DN.
 
-        :param bytes new_dn: The new DN.
+        :param str new_dn: The new DN.
 
         :return: None - any returned value is ignored.
 
@@ -212,7 +212,7 @@ class BaseCallback(object):
     def record_change(cls, dn, old_attrs, new_attrs):
         """Called to indicate a change in attributes.
 
-        :param bytes dn: The DN of the changed record.
+        :param str dn: The DN of the changed record.
 
         :param dict old_attrs: The old attributes.
 

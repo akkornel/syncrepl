@@ -656,7 +656,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
     def syncrepl_entry(self, dn, attrs, uuid):
         """Report addition or modification of an LDAP entry.
 
-        :param bytes dn: The DN of the entry.
+        :param str dn: The DN of the entry.
 
         :param attrs: The entry's attributes.
 
