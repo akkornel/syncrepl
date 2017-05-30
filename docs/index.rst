@@ -18,6 +18,7 @@ Welcome to Syncrepl Client's documentation!
    :hidden:
    :maxdepth: 2
 
+   Requirements <requirements>
    The Client Class <client>
    Callbacks <callbacks>
    Index <genindex>
