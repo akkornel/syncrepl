@@ -3,3 +3,4 @@
 .*.swo
 .*.swp
 syncrepl_client/__pycache__
+syncrepl_client/*.pyc
