@@ -223,9 +223,9 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         assert(isinstance(mode, SyncreplMode))
 
         # Open our shelves
-        self.__data = shelve.open(data_path + 'data')
-        self.__uuid_dn_map = shelve.open(data_path + 'uuid_map')
-        self.__uuid_attrs = shelve.open(data_path + 'attrs')
+        self.__data = shelve.open(data_path + 'data', writeback=True)
+        self.__uuid_dn_map = shelve.open(data_path + 'uuid_map', writeback=True)
+        self.__uuid_attrs = shelve.open(data_path + 'attrs', writeback=True)
 
         # Check the data file version for a mismatch.  If we find one, then
         # prepare to wipe everything.
@@ -508,6 +508,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         reconnect, so that it knows how far behind we are.
         """
         self.__data['cookie'] = cookie
+        self.__data.sync()
 
 
     def syncrepl_refreshdone(self):
@@ -560,6 +561,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
             self.callback.record_delete(self.__uuid_dn_map[uuid])
             del self.__uuid_dn_map[uuid]
             del self.__uuid_attrs[uuid]
+            self.__uuid_dn_map.sync()
+            self.__uuid_attrs.sync()
 
 
     def syncrepl_present(self, uuids, refreshDeletes=False):
@@ -768,3 +771,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
             self.__uuid_dn_map[uuid] = dn
             self.__uuid_attrs[uuid] = attrs
             self.callback.record_add(dn, attrs)
+
+        # Sync changes
+        self.__uuid_dn_map.sync()
+        self.__uuid_attrs.sync()
