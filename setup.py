@@ -13,6 +13,35 @@
 # under the Creative Commons CC0 Public Domain Dedication.
 
 from setuptools import setup, find_packages
+from sys import version_info
+
+
+# Our requirements depend on the Python version
+if ((version_info[0] == 2) and
+    (version_info[1] == 7)
+):
+    install_requires = [
+        'enum34',
+        'python-ldap(>2.4.40)'
+    ]
+elif ((version_info[0] == 3) and
+      (version_info[1] >= 4)
+):
+    install_requires = [
+        'pyldap(>2.4.40)'
+    ]
+elif ((version_info[0] == 3) and
+      (version_info[1] >= 1)
+):
+    install_requires = [
+        'enum34',
+        'pyldap(>2.4.40)'
+    ]
+else:
+    raise OSError('Python 2.7, 3.1, or later is required!')
+
+
+# Let setup handle the rest
 
 setup(
     version = '0.75',
@@ -27,10 +56,7 @@ setup(
 
     packages = find_packages(),
 
-    install_requires = [
-        'enum34',
-        'python-ldap(>2.4.38)',
-    ],
+    install_requires = install_requires,
 
     license = 'BSD 3-Clause',
 
