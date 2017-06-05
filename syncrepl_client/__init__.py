@@ -34,6 +34,7 @@
 # For Python 2 support
 from __future__ import print_function
 
+from enum import Enum
 import ldap
 from ldap.ldapobject import SimpleLDAPObject
 from ldap.syncrepl import SyncreplConsumer
@@ -46,6 +47,33 @@ import threading
 from . import exceptions
 
 __version__ = '0.75'
+
+class SyncreplMode(Enum):
+    """
+    This enumeration is used to specify the operating mode for the Syncrepl
+    client.  Once a mode is set it can not be changed.  To change the mode, you
+    will have to (safely) shut down your existing search, unbind and destroy
+    the existing instance, and start a new instance in the specified mode.
+    """
+
+    REFRESH_ONLY = 'refreshOnly'
+    """
+    In this mode, the syncrepl search will last long enough to bring you in
+    sync with the server.  Once you are in sync,
+    :meth:`~syncrepl_client.Syncrepl.poll()` will return :obj:`False`.
+    """
+    
+    REFRESH_AND_PERSIST = 'refreshAndPersist'
+    """
+    In this mode, you start out doing a refresh.  Once the refresh is complete,
+    subsequent calls to :meth:`~syncrepl_client.Syncrepl.poll` will be used to
+    receive changes as they happen on the LDAP server.  All calls to
+    :meth:`~syncrepl_client.Syncrepl.poll()` will return :obj:`True`, unless a
+    timeout takes place (that will throw :class:`ldap.TIMEOUT`), you cancel the
+    search (that will throw :class:`ldap.CANCELLED`), or something else goes
+    wrong.
+    """
+
 
 class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
     '''
@@ -126,12 +154,16 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
     documented here, for educational purposes.
     '''
 
-    def __init__(self, data_path, callback, ldap_url=None, **kwargs):
+    def __init__(self, data_path, callback, mode, ldap_url=None, **kwargs):
         """Instantiate, connect, and bind.
 
         :param str data_path: A path to where data files will be stored.
 
         :param object callback: An object that receives callbacks.
+
+        :param mode: The syncrepl search mode to use.
+
+        :type mode: A member of the :class:`SyncreplMode` enumeration.
 
         :param ldap_url: A complete LDAP URL string, or an LDAPUrl object, or None.
 
@@ -161,6 +193,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
             different version of software, those checks will fail, and the
             contents will be wiped.
 
+        Mode should be one of :
+
         The `bind_complete()` callback will be called at some point during the
         constructor's execution.
 
@@ -184,6 +218,9 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
         # TODO: Make sure callback is a subclass or subclass instance.
         self.callback = callback
+
+        # Check that we have a valid mode
+        assert(isinstance(mode, SyncreplMode))
 
         # Open our shelves
         self.__data = shelve.open(data_path + 'data')
@@ -264,8 +301,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
         # Prepare the search
         self.ldap_object_search = self.syncrepl_search(ldap_url.dn, ldap_url.scope,
-#            mode='refreshOnly',
-             mode='refreshAndPersist',
+            mode=mode.value,
             filterstr=ldap_url.filterstr,
             attrlist=ldap_url.attrs
         )

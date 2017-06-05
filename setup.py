@@ -28,6 +28,7 @@ setup(
     packages = find_packages(),
 
     install_requires = [
+        'enum34',
         'python-ldap(>2.4.38)',
     ],
 

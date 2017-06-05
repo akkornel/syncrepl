@@ -32,7 +32,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from syncrepl_client import Syncrepl
+from syncrepl_client import Syncrepl, SyncreplMode
 from syncrepl_client.callbacks import LoggingCallback
 from sys import argv, exit
 
@@ -52,6 +52,7 @@ print('CLIENT SETUP START')
 client = Syncrepl(data_path=tempdir,
                   callback=LoggingCallback,
                   ldap_url=argv[1],
+                  mode=SyncreplMode.REFRESH_ONLY
          )
 client.debug = True
 print('CLIENT SETUP COMPLETE!')

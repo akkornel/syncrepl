@@ -21,3 +21,5 @@ class).
 .. autoclass:: syncrepl_client.Syncrepl
    :members:
    :special-members:
+
+.. autoclass:: syncrepl_client.SyncreplMode
