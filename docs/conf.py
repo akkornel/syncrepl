@@ -11,7 +11,10 @@
 # Therefore, this file is likely not copyrightable.
 # As such, this file is in the public domain.
 # For locations where public domain does not exist, this file is licensed
-# under the Creative Commons CC0 Public Domain Dedication.
+# under the Creative Commons CC0 Public Domain Dedication, the text of which
+# may be found in the file `LICENSE_others.md` that was included with this
+# distribution, and also at
+# https://github.com/akkornel/syncrepl/blob/master/LICENSE_others.md
 
 #
 # This file is execfile()d with the current directory set to its
