@@ -9,12 +9,15 @@
    included with this distribution, and also at
    https://github.com/akkornel/syncrepl/blob/master/LICENSE_others.md
    
-   Code contained in this document is also licensed under the BSD 3-Clause License,
-   the text of which may be found in the file `LICENSE.md` that was included
-   with this distribution, and also at
+   Code contained in this document is also licensed under the BSD 3-Clause
+   License, the text of which may be found in the file `LICENSE.md` that was
+   included with this distribution, and also at
    https://github.com/akkornel/syncrepl/blob/master/LICENSE.md
    
-   Code contained in this document is also licensed under the BSD 3-Clause License.
+   Code contained in this document is also licensed under the BSD 3-Clause
+   License, the text of which may be found in the file `LICENSE.md` that was
+   included with this distribution, and also at
+   https://github.com/akkornel/syncrepl/blob/master/LICENSE.md
    
    See the LICENSE file for full license texts.
 

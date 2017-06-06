@@ -27,10 +27,11 @@ from sys import stdout
 
 class BaseCallback(object):
     """
+
     :class:`BaseCallback` is a class containing all of the callbacks which
-    :class:`syncrepl_client.Syncrepl` may call.  It is implemented as a new-style
-    class, with class methods (although :class:`syncrepl_client.Syncrepl` doesn't
-    care).
+    :class:`syncrepl_client.Syncrepl` may call.  It is implemented as a
+    new-style class, with class methods (although
+    :class:`~syncrepl_client.Syncrepl` doesn't care).
 
     This class exists for two reasons:
 
@@ -38,14 +39,27 @@ class BaseCallback(object):
       what the callback means.
 
     * It gives you a useful base class to sink unwanted callbacks.  If you only
-      care about certain callbacks, you can implement them in your class, and let
-      all the other callbacks percolate up to this class, where they are received
-      and ignored.
+      care about certain callbacks, you can implement them in your class, and
+      let all the other callbacks percolate up to this class, where they are
+      received and ignored.
 
     Another reason for using classes is because they can be stacked.  For
     example, if you want to handle callbacks, but you also want them to be
-    logged, you can have your callback class use :class:`LoggingCallback` as a
-    base class, and then set :attr:`LoggingCallback.dest` to the log sink.
+    logged, you can have your callback class use
+    :class:`~syncrepl_client.callbacks.LoggingCallback` as a
+    base class, and then set the
+    :class:`~syncrepl_client.callbacks.LoggingCallback`'s
+    :attr:`~syncrepl_client.callbacks.LoggingCallback.dest` attribute to the
+    log sink (which could be :obj:`~sys.stdout`, or another file handle).
+
+    .. note::
+
+      If your class needs any kind of setup or initalization before it can
+      receive callbacks, it is suggested that you implement your callbacks as
+      instance methods, and then use normal class instantiation to do your
+      preparation, before handing off the instance to
+      :class:`~syncrepl_client.Syncrepl`'s constructor.
+
     """
 
     @classmethod
@@ -86,8 +100,8 @@ class BaseCallback(object):
         .. warning::
 
             Once the callback completes, this LDAP connection will be used for
-            the syncrepl search.  *No other operations will be allowed!**  If you
-            want to communicate with the LDAP server after this callback
+            the syncrepl search.  **No other operations will be allowed!**
+            If you want to communicate with the LDAP server after this callback
             completes, you will need to set up a separate LDAP connection.
         """
         pass
@@ -112,8 +126,9 @@ class BaseCallback(object):
         the best time to do it.  Once you return from this callback, the 
         persist phase will begin.
 
-        If you are operating in refresh-only mode, instead of receiving a 
-        `refresh_done` callback, :meth:`syncrepl_client.poll` will return 
+        If you are operating in refresh-only mode, instead of receiving
+        this callback, the :class:`~syncrepl_client.Syncrepl`
+        :meth:`~syncrepl_client.Syncrepl.poll` method will return
         :class:`False`.
         """
         pass
@@ -131,8 +146,8 @@ class BaseCallback(object):
 
         .. warning::
 
-            :data:`attrs` is passed by reference.  If you manipulate the
-            dictionary—or its contents—in any way; you will pay for it later!
+            :data:`attrs` is passed by reference.  If you modify the
+            dictionary—or its contents—in any way, you will pay for it later!
 
         This callback can happen in all modes, and in all phases, to indicate 
         that an entry has been added to your view of the search results.  In 
@@ -141,19 +156,23 @@ class BaseCallback(object):
         In the persist phase of refresh-and-persist mode, a new entry has just 
         been added—or modified—such that it matches your search.
         
-        Attributes which are not present in the record are not present in the
-        dictionary.  Dict keys are attribute names, and dict values are arrays
+        Attributes which are not present in the record will not present in
+        `attrs`.  Dict keys are attribute names, and dict values are arrays
         (to support multi-valued attributes).
 
         .. note::
 
             Just because the dict values are arrays, does not mean that all
-            attributes are multi-values.  The LDAP client does not know which
+            attributes are multi-valued.  The LDAP client does not know which
             attributes are single- and which are multi-valued, so it assumes
             that all are multi-valued.
+
+            Also, all attribute values will come in as (in Python 2) :obj:`str`
+            objects or (in Python 3) :obj:`bytes` objects.
             
-            To learn which attributes are single- or multi-valued, you need to
-            look at the schema, possibly using :mod:`ldap.schema`.
+            To learn which attributes are single- or multi-valued, and to learn
+            the type (or, in LDAP terms, the *syntax*) of an attribute, you
+            need to look at the schema, possibly using :mod:`ldap.schema`.
         """
         pass
 
@@ -192,8 +211,9 @@ class BaseCallback(object):
         place at any time since your last update.  In the persist phase of 
         refresh-and-persist mode, the entry has just changed.
 
-        You should expect a call to :meth:`record_change()` shortly after this 
-        callback completes.
+        You should expect a call to
+        :meth:`~syncrepl_client.callbacks.BaseCallback.record_change()` shortly
+        after this callback completes.  
         """
         pass
 
@@ -203,9 +223,11 @@ class BaseCallback(object):
 
         :param str dn: The DN of the changed record.
 
-        :param dict old_attrs: The old attributes.
+        :param old_attrs: The old attributes.
+        :type old_attrs: Dict of lists of bytes
 
-        :param dict new_attrs: The new attributes.
+        :param new_attrs: The new attributes.
+        :type new_attrs: Dict of lists of bytes
 
         :return: None - any returned value is ignored.
 
@@ -216,13 +238,14 @@ class BaseCallback(object):
 
         .. note::
 
-            If you look back at :meth:`record_add`, see the note about changing
-            :data:`attrs`, and how it will come back to bite you?  Well, here's
-            where it comes back to bite you!
+            If you look back at
+            :meth:`~syncrepl_client.callbacks.BaseCallback.record_add`, see the
+            note about changing `attrs`, and how it will come back to
+            bite you?  Well, here's where it comes back to bite you!
 
         .. warning::
 
-            :data:`new_attrs` is passed by reference.  If you manipulate the
+            `new_attrs` is passed by reference.  If you modify the
             dictionary—or its contents—in any way; you will pay for it later!
 
         This callback can happen in all modes, and in all phases, to indicate 
@@ -234,12 +257,16 @@ class BaseCallback(object):
         .. note::
 
             Just because the dict values are arrays, does not mean that all
-            attributes are multi-values.  The LDAP client does not know which
+            attributes are multi-valued.  The LDAP client does not know which
             attributes are single- and which are multi-valued, so it assumes
             that all are multi-valued.
+
+            Also, all attribute values will come in as (in Python 2) :obj:`str`
+            objects or (in Python 3) :obj:`bytes` objects.
             
-            To learn which attributes are single- or multi-valued, you need to
-            look at the schema, possibly using :mod:`ldap.schema`.
+            To learn which attributes are single- or multi-valued, and to learn
+            the type (or, in LDAP terms, the *syntax*) of an attribute, you
+            need to look at the schema, possibly using :mod:`ldap.schema`.
         """
         pass
 
@@ -252,24 +279,30 @@ class BaseCallback(object):
         :return: None - any returned value is ignored.
 
         This method doesn't have much of a use.  It's just a way for
-        :class:`syncrepl_client.Syncrepl` to log debug messages.  There's no
+        :class:`~syncrepl_client.Syncrepl` to log debug messages.  There's no
         guarantee that you'll get anything meaningful, or anything at all.
+
+        The safest thing to do is to just `pass` this method.  Or, subclass
+        :class:`~syncrepl_client.callbacks.BaseCallback`.
         """
         pass
 
 
 class LoggingCallback(BaseCallback):
     """
-    :class:`LoggingCallback` is a callback class which logs each callback.  It
-    is useful for debugging purposes, as the output is not meant to be
-    machine-readable.
+    :class:`~syncrepl_client.callbacks.LoggingCallback` is a callback class
+    which logs each callback.  It is useful for debugging purposes, as the
+    output is not meant to be machine-readable.
 
     Each callback will cause messages to be printed to the file set in
-    :attr:`dest`.  For the :meth:`bind_complete` callback, the bind DN is
-    printed.  For callbacks containing DNs, the DNs are printed.  For callbacks
-    containing attribute dictionaries, each dictionary's contents are printed.
+    :attr:`~syncrepl_client.callbacks.LoggingCallback.dest`.  For the
+    :meth:`~syncrepl_client.callbacks.BaseCallback.bind_complete` callback, the
+    bind DN is printed.  For callbacks containing DNs, the DNs are printed.
+    For callbacks containing attribute dictionaries, each dictionary's contents
+    are printed.
 
-    For a list of callbacks, and what they mean, see :class:`BaseCallback`.
+    For a list of callbacks, and what they mean, see
+    :class:`~syncrepl_client.callbacks.BaseCallback`.
     """
 
     dest = stdout
@@ -277,7 +310,7 @@ class LoggingCallback(BaseCallback):
 
     This can be anything which can be used in :func:`print`'s `file` parameter.
 
-    Defaults to :attr:`sys.stdout`.
+    Defaults to :obj:`sys.stdout`.
     """
 
     @classmethod

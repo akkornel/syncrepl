@@ -10,9 +10,9 @@
    included with this distribution, and also at
    https://github.com/akkornel/syncrepl/blob/master/LICENSE_others.md
    
-   Code contained in this document is also licensed under the BSD 3-Clause License,
-   the text of which may be found in the file `LICENSE.md` that was included
-   with this distribution, and also at
+   Code contained in this document is also licensed under the BSD 3-Clause
+   License, the text of which may be found in the file `LICENSE.md` that was
+   included with this distribution, and also at
    https://github.com/akkornel/syncrepl/blob/master/LICENSE.md
    
    See the LICENSE file for full license texts.
@@ -31,14 +31,16 @@ Welcome to Syncrepl Client's documentation!
 
 **syncrepl_client** is a Python module that makes LDAP Syncrepl easy to use.
 
-LDAP Syncrepl allows you to keep up-to-date with an LDAP server, effectively in
-real time, even without LDAP administrator credentials.
+`LDAP Syncrepl`_ allows you to keep up-to-date with an LDAP server, effectively
+in real time, even without LDAP administrator credentials.
+
+.. _LDAP Syncrepl: https://www.openldap.org/doc/admin24/replication.html#LDAP%20Sync%20Replication
 
 If your LDAP directory is used as the source of truth (or a delegate for the
 soource of truth), this keeps you informed when something changes.
 Callbacks—which you write—are triggered by this code when something happens.
 You can then take appropriate action, such as by inserting into a queue or
-sending a message over a message bus.
+sending a message over a bus.
 
 What is Syncrepl?
 -----------------
@@ -68,18 +70,18 @@ has changed.  This includes notification on:
 * Entries, which used to match, no longer matching.  This is essentially the
   same as deletion (at least, it is when you are using a search filter).
 
-* Existing entries having their attributes changed, including their DN.
+* Existing entries having their attributes or DN changed.
 
 The entries you see, and the changes made to them, are based on the
 intersection of four things.
 
-* The entries currently in the directory.
+1. The entries currently in the directory.
 
-* Your access rights, as determined by your bind DN.
+2. Your access rights, as determined by your bind DN.
 
-* Your search filter.
+3. Your search filter.
 
-* Your list of requested attributes.
+4. Your list of requested attributes.
 
 Thanks to the Syncrepl protocol, you don't have to worry about all of the
 above.  The LDAP server handles the work of figuring out what you can see.
@@ -87,7 +89,7 @@ above.  The LDAP server handles the work of figuring out what you can see.
 Requirements
 ============
 
-`syncrepl_client` has four basic requirements:
+`syncrepl_client` has four major requirements:
 
 * Python 2.7, or Python 3.3+.
 
@@ -100,22 +102,28 @@ Requirements
 
   * For Python 3, `pyldap`_ 2.4.40 or later is needed.
 
-* A data store, large enough to store a copy of all the LDAP data received, and fast.
+* A fast data store, large enough to store a copy of all the LDAP data
+  received, and a corresponding amount of RAM.
 
 * An LDAP server which supports RFC 4533, and which is keeping track of changes.
+
+  In the case of OpenLDAP, this means following the instructions in
+  `Section 18.3.1`_ of the `Admin Guide`_.
 
 Lots more details are available on the :doc:`Requirements page </requirements>`.
 
 .. _enum34: https://bitbucket.org/stoneleaf/enum34
 .. _python-ldap: https://www.python-ldap.org
 .. _pyldap: https://github.com/pyldap/pyldap
+.. _Section 18.3.1: https://www.openldap.org/doc/admin24/replication.html#Syncrepl
+.. _Admin Guide: https://www.openldap.org/doc/admin24/index.html
 
 How to Use
 ==========
 
-Although there is a fair bit of coding on your part (mainly in Step 1), this
-code is (intentionally) pretty easy to use!  Over the life of your code, you
-should do these four things:
+Although you'll still need to do a fair bit of coding (mainly in Step 1),
+syncrepl_client is (intentionally) pretty easy to use!  Over the life of your
+code's execution, you should do these four things:
 
 1. Create a class which implements the methods defined in
    :class:`~syncrepl_client.callbacks.BaseCallback`
@@ -133,8 +141,8 @@ should do these four things:
 
 4. Call :meth:`~syncrepl_client.Syncrepl.unbind`.  You're done!
 
-Lots more details are available in the :doc:`Requirements page </requirements>`
-and see demo.py for a simple example.
+Lots more details are available in the :doc:`Requirements page
+</requirements>`, and see demo.py for a simple example.
 
 Copyright and License
 =====================

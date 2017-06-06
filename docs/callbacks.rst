@@ -10,9 +10,9 @@
    included with this distribution, and also at
    https://github.com/akkornel/syncrepl/blob/master/LICENSE_others.md
    
-   Code contained in this document is also licensed under the BSD 3-Clause License,
-   the text of which may be found in the file `LICENSE.md` that was included
-   with this distribution, and also at
+   Code contained in this document is also licensed under the BSD 3-Clause
+   License, the text of which may be found in the file `LICENSE.md` that was
+   included with this distribution, and also at
    https://github.com/akkornel/syncrepl/blob/master/LICENSE.md
    
    See the LICENSE file for full license texts.
@@ -26,8 +26,8 @@ something, it uses a callback.
 The complete list of callbacks, their parameters, and what they mean is defined
 in :class:`~syncrepl_client.callbacks.BaseCallback`.
 :class:`~syncrepl_client.Syncrepl` doesn't care if your object uses instance
-methods, class methods, or static methods, so long as it is able to accept the
-parameters provided.
+methods, class methods, or static methods, so long as your callback is able to
+accept the parameters provided.
 
 In addition to :class:`~syncrepl_client.callbacks.BaseCallback`,
 :class:`~syncrepl_client.callbacks.LoggingCallback` is provided as a way to log

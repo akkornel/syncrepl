@@ -41,7 +41,7 @@ class SyncreplMode(Enum):
     This enumeration is used to specify the operating mode for the Syncrepl
     client.  Once a mode is set it can not be changed.  To change the mode, you
     will have to (safely) shut down your existing search, unbind and destroy
-    the existing instance, and start a new instance in the specified mode.
+    the existing instance, and start a new instance in the new mode.
     """
 
     REFRESH_ONLY = 'refreshOnly'
@@ -66,7 +66,7 @@ class SyncreplMode(Enum):
 class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
     '''
     This class implements the Syncrepl client.  You should have one instance of
-    this class for each syncrepl connection.
+    this class for each syncrepl search.
 
     Each class requires several items, which will be discussed here:
 
@@ -85,7 +85,13 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
     
       The data store files should be deleted any time you want a completely
       fresh start.  The data store files will also be wiped any time the
-      software version changes.
+      syncrepl_client software version changes.
+
+      .. warning::
+
+        Data store files are also not compatible between Python 2 and Python 3.
+        Attempting to use a data store from Python 2 with Python 3—or vice
+        versa—will likely trigger an exception during instantiation.
 
     * **A callback class**
       
@@ -94,12 +100,12 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
       The complete list of callback methods is documented in
       :class:`~syncrepl_client.callbacks.BaseCallback`.  That class is designed
-      for subclassing, because it defines each callback method, but doesn't
-      actually do anything.  So, you can subclass
+      for subclassing, because it defines each callback method but doesn't
+      actually do anything.  You can have your class inherit from
       :class:`~syncrepl_client.callbacks.BaseCallback`, and let it handle the
       callbacks that you don't care about.
 
-      For a simple example of a callback in action, see the
+      For a simple example of a callback in action, see the code for the
       :class:`~syncrepl_client.callbacks.LoggingCallback` class.
 
     * **An LDAP URL**
@@ -108,42 +114,57 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
       should connect, what credentials should be used to connect, and how the
       search should be performed.
 
-      The :class:`~ldapurl.LDAPUrl` class is used to parse the LDAP URL.  Refer
-      to that class' documentation for information on the fields available.
+      The :class:`~ldapurl.LDAPUrl` class is used to parse the LDAP URL.  You
+      can also use :manpage:`ldapurl` (part of the ldap-utils) to construct a
+      URL.  Refer to the class' documentation for information on the fields
+      available.
 
-      If a valid data store exists, this field is *optional*; the URL will be
-      stored in the data store.  If you provide both an LDAP URL *and* a valid
+      If a valid data store exists, this field is optional: the URL your
+      provide will be stored in the data store, which will be used in
+      subsequent connections.  If you provide both an LDAP URL *and* a valid
       data store, your LDAP URL will be used, *as long as* the search
       parameters have not changed (the LDAP host and authentication information
-      can be changed).
+      are OK to change).
 
-      The Callback class supports the following bind methods:
+      syncrepl_client supports the following bind methods, which you control by
+      using particular LDAP URL extensions:
 
       * *Anonymous bind*: Do not set a bind DN or password.
       
       * *Simple bind*: Set the bind DN and password as part of the URL.
-        
-        For security, it is suggested that you store the LDAP URL without
-        password, convert the URL into an object at runtime, add the password,
-        and pass the password-laden object to the constructor.
-      
+
+        The `bindname` LDAP URL extension is used to hold the bind DN, and the
+        `X-BINDPW` extension is used to hold the bind password.
+
+        .. note::
+          For security, it is suggested that you store the LDAP URL without a
+          password, convert the URL into an :class:`ldapurl.LDAPUrl` object at
+          runtime, add the password, and pass the password-laden object to the
+          :class:`~syncrepl_client.Syncrepl` constructor.
+
       * *GSSAPI bind*: Set the bind DN to `GSSAPI`, and do not set a password.
-        You are responsible for ensuring that you have valid Kerberos
-        credentials.
-        
-        As an extra safety mechanism, when you receive the `bind_complete`
+
+        .. note::
+          You are responsible for ensuring that you have valid Kerberos
+          credentials.
+
+        As an extra safety mechanism, when you receive the
+        :meth:`~syncrepl_client.callbacks.BaseCallback.bind_complete`
         callback, consider doing a "Who am I?" check against the LDAP server,
         to make sure the bind DN is what you expected.  That will help guard
         against expired or unexpected credentials.
 
     Methods are defined below.  Almost all methods are documented, including
-    internal methods: Methods whose names start with `syncrepl_` are internal
-    methods, which clients **must not call**.  That being said, the methods are
-    documented here, for educational purposes.
+    internal methods.
+    
+    .. warning::
+      Methods whose names start with `syncrepl_` are internal
+      methods, which clients **must not call**.  That being said, the methods
+      are still being documented here, for educational purposes.
     '''
 
     def __init__(self, data_path, callback, mode, ldap_url=None, **kwargs):
-        """Instantiate, connect, and bind.
+        """Instantiate, connect to an LDAP server, and bind.
 
         :param str data_path: A path to where data files will be stored.
 
@@ -151,45 +172,71 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
         :param mode: The syncrepl search mode to use.
 
-        :type mode: A member of the :class:`SyncreplMode` enumeration.
+        :type mode: A member of the :class:`~syncrepl_client.SyncreplMode` enumeration.
 
-        :param ldap_url: A complete LDAP URL string, or an LDAPUrl object, or None.
+        :param ldap_url: A complete LDAP URL string, or an LDAPUrl instance, or None.
 
         :type ldap_url: str or ldapurl.LDAPUrl or None
 
         :returns: A Syncrepl instance.
 
-        This is the :class:`Syncrepl` class's constructor.  In addition to
-        basic initialization, it is also responsible for making the initial
-        connection to the LDAP server, binding, and starting the syncrepl
-        search.
+        This is the :class:`~syncrepl_client.Syncrepl` class's constructor.  In
+        addition to basic initialization, it is also responsible for making the
+        initial connection to the LDAP server, binding, and starting the
+        syncrepl search.
 
         .. note::
 
             Many parts of this documentation refers to syncrepl as a "search".
             That is because a syncrepl is initiated using an LDAP search
-            operation, to which a syncrepl "control" is attached.
+            operation, to which a syncrepl control is attached.
 
-        `data_path` is used to specify the prefix for the path to data storage.
-        :class:`Syncrepl` will open multiple files, whose names will be
-        appended to :obj:`data_path`.  You are responsible for making sure that
-        :obj:`data_path` is appropriate for your OS.
+        - `data_path` is used to specify the prefix for the path to data
+          storage.  :class:`~syncrepl_client.Syncrepl` will open multiple
+          files, whose names will be appended to :obj:`data_path`.  You are
+          responsible for making sure that :obj:`data_path` is appropriate for
+          your OS.
 
-        .. note::
+          .. note::
 
-            Some basic checks may be performed on the data files.  If you use a
-            different version of software, those checks will fail, and the
-            contents will be wiped.
+              Some basic checks may be performed on the data files.  If you use
+              a different version of software, those checks will fail, and the
+              contents will be wiped.
 
-        Mode should be one of :
+        - :obj:`callback` can be anything which can receive method calls, and
+          which is specifically able to handle the calls defined in
+          :class:`~syncrepl_client.callbacks.BaseCallback`.
+
+        - :obj:`mode` should be one of the values from
+          :class:`~syncrepl_client.SyncreplMode`.
+          :attr:`~syncrepl_client.SyncreplMode.REFRESH_ONLY` means that you
+          want the syncrepl search to end once your have been brought in sync
+          with the LDAP server.
+          :attr:`~syncrepl_client.SyncreplMode.REFRESH_AND_PERSIST` means that,
+          after being refreshed, you will receive notice whenever a change is
+          made on the LDAP server.
+
+        - :obj:`ldap_url` is an LDAP URL, containing at least the following
+          information:
+
+          - The LDAP protocol (`ldap`, `ldaps`, or `ldapi`).
+
+          - The base DN to search, and the search scope.
+
+          All other LDAP URL fields are recognized.  The `bindname` LDAP URL
+          extension may be used to specify a bind DN (or "GSSAPI" for GSSAPI
+          bind).  When using simple bind, the `X-BINDPW` extension must hold
+          the bind password.
 
         The `bind_complete()` callback will be called at some point during the
         constructor's execution.
 
         Returns a ready-to-use instance.  The next call you should make to the
-        instance is :obj:`poll()`.  Continue calling :obj:`poll()` until it
-        returns `False`; then you should call :obj:`unbind()`.  To request safe
-        teardown of the connection, call :obj:`please_stop()`.
+        instance is :meth:`~syncrepl_client.Syncrepl.poll`.  Continue calling
+        :meth:`~syncrepl_client.Syncrepl.poll` until it returns :obj:`False`;
+        then you should call :meth:`~syncrepl_client.Syncrepl.unbind`.  To
+        request safe teardown of the connection, call
+        :meth:`~syncrepl_client.Syncrepl.please_stop`.
         """
 
         # Set up the thread
@@ -324,7 +371,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
         .. warning::
 
-          If you are using the Context Manager protocol, do *not* call `unbind`;
+          If you are using the Context Manager protocol, *do not call `unbind`*;
           it will be called for you at the appropriate time.
 
         .. warning::
@@ -334,8 +381,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
           assumptions about garbage collection!
 
         Once unbound, this instance is no longer usable, even if it hasn't been
-        deleted yet.  To start a new Syncrepl client, make a new instance of
-        this object.
+        deleted yet.  To start a new client, make a new instance of
+        :class:`~syncrepl_client.Syncrepl`.
         """
         self.__uuid_dn_map.close()
         self.__uuid_attrs.close()
@@ -358,9 +405,11 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         After calling this method, there is a set list of steps your code
         should take:
 
-        1. Continue calling `poll()` until it returns `False`.
+        1. Continue calling :meth:`~syncrepl_client.Syncrepl.poll` until it
+           returns :obj:`False`.
 
-        2. Call `unbind()` (unless you're using the Context Management protocol).
+        2. Call :meth:`~syncrepl_client.Syncrepl.unbind` (unless you're using
+           the Context Management protocol).
 
         3. Stop using this instance.
 
@@ -372,7 +421,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         When running in refresh-and-persist mode, if the refresh phase is still
         in progress, it will be completed.  If in the persist phase, a Cancel
         request will be sent to the LDAP server.  Operations will then continue
-        until the LDAP server confirms the operation is cancelled.
+        until the LDAP server confirms the search is cancelled.
 
         This is the *only* method which is thread-safe.
         """
@@ -388,28 +437,33 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
         :returns: True or False.
 
-        In refresh-only mode, returning True indicates that the refresh is
-        still in progress.  You must continue calling `poll()` until `False` is
-        returned.  Once `False` is returned, the refresh is complete, and it is
-        safe to call `unbind()`.
+        In refresh-only mode, returning :obj:`True` indicates that the refresh
+        is still in progress.  You must continue calling
+        :meth:`~syncrepl_client.Syncrepl.poll` until :obj:`False` is returned.
+        Once :obj:`False` is returned, the refresh is complete, and it is safe
+        to call :meth:`~syncrepl_client.Syncrepl.unbind`.
 
-        In refresh-and-persist mode, returning `True` only indicates that the
-        connection is still active: Work might or might not be taking place.
-        The `refresh_done()` callback is used to indicate the completion of the
-        refresh phase and the start of the persist phase.  During the refresh
-        phase, when the connection is idle, `poll()` will return `True` every ~3
-        seconds.  This is for single-process applications.
+        In refresh-and-persist mode, returning :obj:`True` only indicates that
+        the connection is still active: Work might or might not be taking
+        place.  The
+        :meth:`~syncrepl_client.callbacks.BaseCallback.refresh_done` callback
+        is used to indicate the completion of the refresh phase and the start
+        of the persist phase.  During the refresh phase, when the connection is
+        idle, :meth:`~syncrepl_client.Syncrepl.poll` will return :obj:`True`
+        every ~3 seconds.  This is for single-process applications.
 
-        Most callbacks will be made during the execution of `poll()`.
+        Most callbacks will be made during the execution of
+        :meth:`~syncrepl_client.Syncrepl.poll`.
 
         .. warning::
 
-          Just because `poll()` has returned, does not mean that you are in
-          sync with the LDAP server.  You must continue calling `poll()` until
-          it returns `False`.
+          Just because :meth:`~syncrepl_client.Syncrepl.poll` has returned,
+          does not mean that you are in sync with the LDAP server.  You must
+          continue calling :meth:`~syncrepl_client.Syncrepl.poll` until it
+          returns :obj:`False`.
 
           To request safe, consistent teardown of the connection, call
-          `please_stop()`.
+          :meth:`~syncrepl_client.Syncrepl.please_stop`.
         """
 
         # Make sure we aren't running on a closed object.
@@ -458,18 +512,24 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
 
     def sync(self, force=False):
-        """Sync data store to storage.
+        """Sync the data store to storage.
 
         :param bool force: Force sync even in refresh mode.
 
         :returns: None
+
+        .. note::
+
+            This is an internal Syncrepl operation.  It is documented here for
+            educational purposes, but should **not** be called by clients.
 
         For performance, the data store is kept in memory, and is only synced
         to disk in certain cases.  Those cases are:
 
         * When an instance is unbound.
 
-        * When a change happens in the persist phase of refresh-and-persist mode.
+        * When a change happens in the persist phase of refresh-and-persist
+          mode.
 
         In refresh mode, the data store is not synced to disk until the refresh
         is complete.  This is done because consistency is not guaranteed in the
@@ -543,10 +603,14 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
         This is called when we moving from the Refresh mode into the Persist
         mode of refresh-and-persist.  This is not called in refresh-only mode.
+
+        Triggers a :meth:`~syncrepl_client.callbacks.BaseCallback.refresh_done`
+        callback.
         """
 
-        # Besides doing a callback, we update an internal tracking variable, and
-        # we delete our list of present items (that's only used in the Refresh mode).
+        # Besides doing a callback, we update an internal tracking variable,
+        # and we delete our list of present items (that's only used in the
+        # Refresh mode).
         self.callback.refresh_done()
         self.__in_refresh = False
         del self.__present_uuids
@@ -573,7 +637,9 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         The one parameter is a list of UUIDs, which we should already know
         about.
 
-        Triggers a deletion callback for each UUID.
+        Triggers a
+        :meth:`~syncrepl_client.callbacks.BaseCallback.record_delete` callback
+        for each UUID.
         """
         for uuid in uuids:
             if not uuid in self.__uuid_dn_map:
@@ -607,34 +673,36 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
         As part of the syncrepl process, we get a big list of UUIDs and their
         DNs (plus attributes), from which we build a mapping (see
-        :obj:`syncrepl_entry()`, below).  The first time a sync takes place
-        (when there is no valid cookie), you are able to assume that every
-        mapping entry received is present in the directory; but in subsequent
-        syncs (using a valid cookie) you can't be sure which entries are
-        present and which have been deleted.  In addition, if you have a cookie
-        that is now too old, there is no way to know which entries in your data
-        store still exist in the directory.
+        :meth:`~syncrepl_client.Syncrepl.syncrepl_entry`, below).  The first
+        time a sync takes place (when there is no valid cookie), you are able
+        to assume that every mapping entry received is present in the
+        directory; but in subsequent syncs (using a valid cookie) you can't be
+        sure which entries are present and which have been deleted.  In
+        addition, if you have a cookie that is now too old, there is no way to
+        know which entries in your data store still exist in the directory.
         
         The "Present" messages, and the resulting calls, are used to bring us
         back in sync with the Directory, regardless of our local state.
 
-        `uuids` is either a list of UUIDs, or `None`.  `refreshDeletes` is a
-        boolean.  To understand how the two parameters are related, it's better
-        to look at the latter parameter first.
+        `uuids` is either a list of UUIDs, or :obj:`None`.  `refreshDeletes` is
+        a boolean.  To understand how the two parameters are related, it's
+        better to look at the latter parameter first.
 
-        * If `refreshDeletes` is `False`, and `uuids` is a list, then `uuids`
-          contains a list of entries that are currently in the directory.
+        * If `refreshDeletes` is :obj:`False`, and `uuids` is a list, then
+          `uuids` contains a list of entries that are currently in the
+          directory.
 
-        * If `refreshDeletes` is `False`, but `uuids` is `None`, then we are
-          almost synced.  We now need to go into our mapping, and remove all
-          entries that were not previously mentioned as being in the directory.
+        * If `refreshDeletes` is :obj:`False`, but `uuids` is :obj:`None`, then
+          we are almost synced.  We now need to go into our mapping, and remove
+          all entries that were not previously mentioned as being in the
+          directory.
 
-        * If `refreshDeletes` is `True`, and we have a list, then `uuids`
+        * If `refreshDeletes` is :obj:`True`, and we have a list, then `uuids`
           contains entries that used to be in the directory, but are now gone.
 
-        * If `refreshDeletes` is `True`, but `uuids` is `None`, then we are
-          synced: Our current mapping of UUIDs, minus those previously deleted,
-          represents the current state of the directory.
+        * If `refreshDeletes` is :obj:`True`, but `uuids` is :obj:`None`, then
+          we are synced: Our current mapping of UUIDs, minus those previously
+          deleted, represents the current state of the directory.
 
         Here is another way to think about it: The LDAP server needs to work out
         the most efficient way of relaying changes to us.  There are three ways
@@ -647,23 +715,26 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
           In this mode, you will receive:
 
-          - Calls where `uuids` is a list and `refreshDeletes` is `False`.
+          - Calls where `uuids` is a list and `refreshDeletes` is :obj:`False`.
 
-          - A call where `uuids` is `None` and `refreshDeletes` is `False`.
+          - A call where `uuids` is :obj:`None` and `refreshDeletes` is
+            :obj:`False`.
 
         * "The following entries are new, and these other entries have been
-          deleted, but everything else you know about is still in the directory."
+          deleted, but everything else you know about is still in the
+          directory."
 
-          This is the mode that is used when, since your last checkin, there have
-          been alot of additions and deletions.
+          This is the mode that is used when, since your last checkin, there
+          have been alot of additions and deletions.
 
           In this mode, you will receive:
 
-          - Calls where `uuids` is a list and `refreshDeletes` is `False`.
+          - Calls where `uuids` is a list and `refreshDeletes` is :obj:`False`.
 
-          - Calls where `uuids` is a list and `refreshDeletes` is `True`.
+          - Calls where `uuids` is a list and `refreshDeletes` is :obj:`True`.
 
-          - A call where uuids` is `None` and `refreshDeletes` is `True`.
+          - A call where uuids` is :obj:`None` and `refreshDeletes` is
+            :obj:`True`.
 
         * "Everything is up-to-date and there are no changes."
 
@@ -671,7 +742,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
           In this mode, you wil receive:
 
-          - A call where `uuids` is `None` and `refreshDeletes` is `True`.
+          - A call where `uuids` is :obj:`None` and `refreshDeletes` is
+            :obj:`True`.
 
         The LDAP server chooses which mode to use when we connect and present a
         valid cookie.  If we don't have a valid cookie, then the LDAP server
@@ -743,10 +815,10 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
         In refresh-only sync, and in the refresh phase of refresh-and-persist
         syncrepl, this method is called multiple times, interspersed with calls
-        to :obj:`syncrepl_present()`.  If a valid cookie was provided, the
-        server will only send new/changed entries since our last checkin;
-        otherwise, we'll get a big list of entries—all of which will be
-        present—to seed our mapping.
+        to :meth:`~syncrepl_client.Syncrepl.syncrepl_present`.  If a valid
+        cookie was provided, the server will only send new/changed entries
+        since our last checkin; otherwise, we'll get a big list of entries—all
+        of which will be present—to seed our mapping.
 
         In refresh-and-persist mode, everything from the previous paragraph is
         true, but when in the persist phase (once the refresh phase has
