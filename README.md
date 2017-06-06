@@ -1,6 +1,6 @@
 [![Documentation Status](http://readthedocs.org/projects/syncrepl-client/badge/?version=latest)](http://syncrepl-client.readthedocs.io/en/latest/?badge=latest)
 [![Coverity Scan
-Status](https://scan.coverity.com/projects/akkornel-syncrepl)](https://scan.coverity.com/projects/12870/badge.svg)
+Status](https://scan.coverity.com/projects/12870/badge.svg)](https://scan.coverity.com/projects/akkornel-syncrepl)
 
 # Oh No!
 
