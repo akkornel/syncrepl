@@ -644,7 +644,6 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         for uuid in uuids:
             if not uuid in self.__uuid_dn_map:
                 raise RuntimeError('WARNING: Trying to delete uuid', uuid, 'not in map!')
-                continue
             self.callback.record_delete(self.__uuid_dn_map[uuid])
             del self.__uuid_dn_map[uuid]
             del self.__uuid_attrs[uuid]
