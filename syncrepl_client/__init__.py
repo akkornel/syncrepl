@@ -290,6 +290,12 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
         # If no version is defined, set it and clear everything else.
         if 'version' not in self.__data:
+            # Try to grab the URL, if it exists.
+            if (('url' in self.__data) and
+                (ldap_url is None)
+            ):
+                ldap_url = self.__data['url']
+
             self.__data.clear
             self.__data['version'] = __version__
             self.__uuid_dn_map.clear
