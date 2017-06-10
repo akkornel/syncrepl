@@ -1,0 +1,38 @@
+This patch fixes a bug in both pyldap, when running on Python 3.
+It has been tested with pyldap 2.4.35 and 2.4.35.1.
+
+python-ldap is also affected, but it has other Python 3-related bugs,
+so this patch along won't fix things.
+
+To apply this patch:
+
+1) Install the pyldap package.
+2) Switch to the directory where the ldap module was installed.
+3) Run `patch -p0 < PATH_TO_THIS_FILE.patch`.
+
+If you can't find the directory where pyldap is installed, try this:
+
+python3.5 -c 'import ldap.syncrepl; print(ldap.syncrepl.__file__)'
+
+Replace "python3.5" with the appropriate Python command.
+
+--- syncrepl.py	2017-06-10 16:08:10.000000000 -0700
++++ syncrepl.py	2017-06-10 16:08:31.000000000 -0700
+@@ -132,7 +132,7 @@
+     def decodeControlValue(self, encodedControlValue):
+         d = decoder.decode(encodedControlValue, asn1Spec = syncStateValue())
+         state = d[0].getComponentByName('state')
+-        uuid = UUID(bytes=d[0].getComponentByName('entryUUID'))
++        uuid = UUID(bytes=bytes(d[0].getComponentByName('entryUUID')))
+         self.cookie = d[0].getComponentByName('cookie')
+         self.state = self.__class__.opnames[int(state)]
+         self.entryUUID = str(uuid)
+@@ -283,7 +283,7 @@
+                     uuids = []
+                     ids = comp.getComponentByName('syncUUIDs')
+                     for i in range(len(ids)):
+-                        uuid = UUID(bytes=str(ids.getComponentByPosition(i)))
++                        uuid = UUID(bytes=bytes(ids.getComponentByPosition(i)))
+                         uuids.append(str(uuid))
+                     val['syncUUIDs'] = uuids
+                     val['refreshDeletes'] = bool(comp.getComponentByName('refreshDeletes'))
