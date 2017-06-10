@@ -4,3 +4,6 @@
 .*.swp
 syncrepl_client/__pycache__
 syncrepl_client/*.pyc
+build
+dist
+syncrepl_client.egg-info
