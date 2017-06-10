@@ -1,9 +1,16 @@
+# Data caches
 *.db
+
+# Vi/Vim temp files
 .*.swn
 .*.swo
 .*.swp
+
+# Python compiled code
 syncrepl_client/__pycache__
 syncrepl_client/*.pyc
+
+# Setuptools artifacts
 build
 dist
 syncrepl_client.egg-info
