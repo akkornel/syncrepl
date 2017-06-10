@@ -29,7 +29,7 @@ from ldap.syncrepl import SyncreplConsumer
 import ldapurl
 import shelve
 import signal
-from sys import argv, exit
+from sys import argv, exit, version_info
 import threading
 
 from . import exceptions
@@ -282,6 +282,22 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
                 writeback=True
             )
 
+        # Check the Python version for a mismatch.
+        # If the major or minor numbers differ, then prepare to wipe
+        # everything.
+        if (('version' in self.__data) and
+            ('pyversion' not in self.__data)
+        ):
+            del self.__data['version']
+
+        if (('version' in self.__data) and
+            ('pyversion' in self.__data) and
+            ((self.__data['pyversion'][0] != version_info.major) or
+             (self.__data['pyversion'][1] != version_info.minor)
+            )
+        ):
+            del self.__data['version']
+
         # Check the data file version for a mismatch.  If we find one, then
         # prepare to wipe everything.
         if (('version' in self.__data) and
@@ -298,6 +314,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
             self.__data.clear
             self.__data['version'] = __version__
+            self.__data['pyversion'] = tuple(version_info)
             self.__uuid_dn_map.clear
             self.__uuid_attrs.clear
 
