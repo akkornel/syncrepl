@@ -258,10 +258,29 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         assert(isinstance(mode, SyncreplMode))
 
         # Open our shelves
-        self.__data = shelve.open(data_path + 'data', writeback=True)
-        self.__uuid_dn_map = shelve.open(data_path + 'uuid_map', writeback=True)
-        self.__dn_uuid_map = shelve.open(data_path + 'dn_map', writeback=True)
-        self.__uuid_attrs = shelve.open(data_path + 'attrs', writeback=True)
+        try:
+            self.__data = shelve.open(data_path + 'data', writeback=True)
+            self.__uuid_dn_map = shelve.open(data_path + 'uuid_map', writeback=True)
+            self.__dn_uuid_map = shelve.open(data_path + 'dn_map', writeback=True)
+            self.__uuid_attrs = shelve.open(data_path + 'attrs', writeback=True)
+        except:
+            # It's likely a shelf had a problem opening, so recreate them all.
+            self.__data = shelve.open(data_path + 'data',
+                flag='n',
+                writeback=True
+            )
+            self.__uuid_dn_map = shelve.open(data_path + 'uuid_map',
+                flag='n',
+                writeback=True
+            )
+            self.__dn_uuid_map = shelve.open(data_path + 'dn_map',
+                flag='n',
+                writeback=True
+            )
+            self.__uuid_attrs = shelve.open(data_path + 'attrs',
+                flag='n',
+                writeback=True
+            )
 
         # Check the data file version for a mismatch.  If we find one, then
         # prepare to wipe everything.
