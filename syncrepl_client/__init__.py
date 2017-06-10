@@ -310,13 +310,40 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
             if (('url' in self.__data) and
                 (ldap_url is None)
             ):
-                ldap_url = self.__data['url']
+                # This fetch might fail, which is OK.
+                try:
+                    ldap_url = self.__data['url']
+                except:
+                    pass
 
-            self.__data.clear
+            # Calling .clear() might not work, because of version changes.
+            # It might be amazing that we even got this far.
+            # So, close and re-create all shelves.
+            self.__data.close()
+            self.__data = shelve.open(data_path + 'data',
+                flag='n',
+                writeback=True
+            )
+            self.__uuid_dn_map.close()
+            self.__uuid_dn_map = shelve.open(data_path + 'uuid_map',
+                flag='n',
+                writeback=True
+            )
+            self.__dn_uuid_map.close()
+            self.__dn_uuid_map = shelve.open(data_path + 'dn_map',
+                flag='n',
+                writeback=True
+            )
+            self.__uuid_attrs.close()
+            self.__uuid_attrs = shelve.open(data_path + 'attrs',
+                flag='n',
+                writeback=True
+            )
+
+            # Set version and sync
             self.__data['version'] = __version__
             self.__data['pyversion'] = tuple(version_info)
-            self.__uuid_dn_map.clear
-            self.__uuid_attrs.clear
+            self.sync()
 
         # If ldap_url exists, and isn't an object, then convert it
         if ((ldap_url is not None) and (type(ldap_url) is not ldapurl.LDAPUrl)):
