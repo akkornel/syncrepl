@@ -260,6 +260,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         # Open our shelves
         self.__data = shelve.open(data_path + 'data', writeback=True)
         self.__uuid_dn_map = shelve.open(data_path + 'uuid_map', writeback=True)
+        self.__dn_uuid_map = shelve.open(data_path + 'dn_map', writeback=True)
         self.__uuid_attrs = shelve.open(data_path + 'attrs', writeback=True)
 
         # Check the data file version for a mismatch.  If we find one, then
@@ -385,6 +386,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         :class:`~syncrepl_client.Syncrepl`.
         """
         self.__uuid_dn_map.close()
+        self.__dn_uuid_map.close()
         self.__uuid_attrs.close()
         self.__data.close()
         self.deleted = True
@@ -549,6 +551,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         ):
             self.__data.sync()
             self.__uuid_dn_map.sync()
+            self.__dn_uuid_map.sync()
             self.__uuid_attrs.sync()
 
 
@@ -651,6 +654,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
             if not uuid in self.__uuid_dn_map:
                 raise RuntimeError('WARNING: Trying to delete uuid', uuid, 'not in map!')
             self.callback.record_delete(self.__uuid_dn_map[uuid])
+            del self.__dn_uuid_map[self.__uuid_dn_map[uuid]]
             del self.__uuid_dn_map[uuid]
             del self.__uuid_attrs[uuid]
             self.sync()
@@ -852,8 +856,21 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
             # Check first for DN change.
             if self.__uuid_dn_map[uuid] != dn:
-                # Besides updating our records, we need to do a callback.
+                # Is there already a DN in the map???
+                if dn in self.__dn_uuid_map:
+                    # Our new DN is already in the map!  That means a deletion
+                    # happened at some point in the past, but we missed it.
+                    # We need to completely delete the "old" entry;
+                    # only then can we continue with the rename.
+                    self.syncrepl_delete(self.__dn_uuid_map[dn])
+
+                # At this point, the new DN is clear to occupy.
+                # Let the client know about the rename.
                 self.callback.record_rename(self.__uuid_dn_map[uuid], dn)
+
+                # Now delete the old DN-UUID map entry, and update both maps.
+                del self.__dn_uuid_map[__uuid_dn_map[uuid]]
+                self.__dn_uuid_map[dn] = uuid
                 self.__uuid_dn_map[uuid] = dn
 
             # Besides the DN change, other attributes may also have changed.
@@ -865,7 +882,18 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
             self.__uuid_attrs[uuid] = attrs
         else:
             # The UUID is new, so add it!
+
+            # But first, is the DN already in the map???
+            if dn in self.__dn_uuid_map:
+                # Our new DN is already in the map!  That means a deletion
+                # happened at some point in the past, and this is a totally new
+                # entry, but we missed that happening.
+                # We need to completely delete the old entry, using the old UUID.
+                self.syncrepl_delete(self.__dn_uuid_map[dn])
+
+            # Our maps are clear!  Update the map and do the callback.
             self.__uuid_dn_map[uuid] = dn
+            self.__dn_uuid_map[dn] = uuid
             self.__uuid_attrs[uuid] = attrs
             self.callback.record_add(dn, attrs)
 
