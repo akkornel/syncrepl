@@ -495,9 +495,15 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
         # All other exceptions are real, and aren't caught.
 
-        # If poll_output was False, then we're done, so sync and return
+        # If poll_output was False, then we're done, but done with what?
+        # If we're in refresh-only mode, call syncrepl_refreshdone()
+        # (That will also sync for us.)
+        # If we're in refresh-and-persist mode, then just sync.
         if poll_output is False:
-            self.sync(force=True)
+            if self.__in_refresh is True:
+                self.syncrepl_refreshdone()
+            else:
+                self.sync(force=True)
             return poll_output
 
         # Check if we have been asked to stop.  If we have, send a cancellation.
