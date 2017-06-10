@@ -38,6 +38,10 @@ thread](https://mail.python.org/pipermail/python-ldap/2017q2/003919.html).
 This bug does not affect pyldap, which has fixed it as part of release
 2.4.35.1.
 
+**NOTE:** It is still possible to use python-ldap with this software.  If you
+restrict yourself to the `refreshOnly` mode, then you should not be affected by
+this bug.
+
 ## pyldap: UUID instantiation
 
 In an LDAP directory, every entry has a normally-hidden UUID.  These UUIDs are
