@@ -106,6 +106,8 @@ Requirements
 
   * For Python 3, `pyldap`_ 2.4.40 or later is needed.
 
+  Older versions may be supported.  Read more in `patches`_.
+
 * A fast data store, large enough to store a copy of all the LDAP data
   received, and a corresponding amount of RAM.
 
@@ -119,6 +121,7 @@ Lots more details are available in `the Requirements page`_.
 .. _enum34: https://bitbucket.org/stoneleaf/enum34
 .. _python-ldap: https://www.python-ldap.org
 .. _pyldap: https://github.com/pyldap/pyldap
+.. _patches: https://github.com/akkornel/syncrepl/tree/master/patches
 .. _Section 18.3.1: https://www.openldap.org/doc/admin24/replication.html#Syncrepl
 .. _Admin Guide: https://www.openldap.org/doc/admin24/index.html
 .. _the Requirements page: http://syncrepl-client.readthedocs.io/en/latest/requirements.html
