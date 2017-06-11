@@ -103,7 +103,7 @@ setup(
     url = 'http://github.com/akkornel/syncrepl',
 
     packages = find_packages(),
-
+    zip_safe = True,
     include_package_data = True,
 
     python_requires = '>=2.7,!=3.0.*',
