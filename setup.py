@@ -68,7 +68,8 @@ if setuptools_under_18 is True:
         install_requirements.append('pyldap')
 else:
     extra_requirements[":python_version<='2.7'"] = ['python-ldap>=2.4.40']
-    extra_requirements[":python_version>='3.1'"] = ['pyldap==2.4.35.1+UUIDpatch,>=2.4.40']
+    extra_requirements[":python_version>='3.1'"] = ['pyldap>=2.4.35.1']
+
 
 
 # Have code pull the version number from _version.py
