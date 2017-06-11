@@ -16,34 +16,59 @@
 # https://github.com/akkornel/syncrepl/blob/master/LICENSE_others.md
 
 
+import setuptools
 from setuptools import setup, find_packages
 from syncrepl_client import __version__
-from sys import version_info
+from sys import argv, version_info
 
 
-# Our requirements depend on the Python version
+# Thanks to https://hynek.me/articles/conditional-python-dependencies/
+# for helping me understand the mess that is requirements specifications.
+
+setuptools_under_18 = False
+if int(setuptools.__version__.split('.', 1)[0]) < 18:
+    setuptools_under_18 = True
+install_requirements = list()
+extra_requirements = dict()
+
+# Block wheel creation on old setuptools
+if ((setuptools_under_18 is True) and
+    ('bdist_wheel' in argv)
+):
+    raise OSError('setuptools is too old to create good wheel files.')
+
+# Make sure we have Python 2.7, or 3.1+
+# This is covered again later in the 'python_requires' option, but let's be
+# safe.
 if ((version_info[0] == 2) and
-    (version_info[1] == 7)
+    (version_info[1] < 7)
 ):
-    install_requires = [
-        'enum34',
-        'python-ldap(>2.4.40)'
-    ]
-elif ((version_info[0] == 3) and
-      (version_info[1] >= 4)
+    raise OSError('With Python 2, Python 2.7 is required.')
+if ((version_info[0] == 3) and
+    (version_info[1] == 0)
 ):
-    install_requires = [
-        'pyldap(>2.4.40)'
-    ]
-elif ((version_info[0] == 3) and
-      (version_info[1] >= 1)
-):
-    install_requires = [
-        'enum34',
-        'pyldap(>2.4.40)'
-    ]
+    raise OSError('With Python 3, Python 3.1 or later is required.')
+
+# Pythons 3.4 and lower require enum34
+if setuptools_under_18 is True:
+    if ((version_info[0] == 2) or
+        ((version_info[0] == 3) and
+         (version_info[1] < 4)
+        )
+    ):
+        install_requirements.append('enum34')
 else:
-    raise OSError('Python 2.7, 3.1, or later is required!')
+    extra_requirements[":python_version<'3.4'"] = ['enum34']
+
+# Python 2 requires python-ldap; Python 3 requires pyldap
+if setuptools_under_18 is True:
+    if version_info[0] == 2:
+        install_requirements.append('python-ldap')
+    else:
+        install_requirements.append('pyldap')
+else:
+    extra_requirements[":python_version<='2.7'"] = ['python-ldap>=2.4.40']
+    extra_requirements[":python_version>='3.1'"] = ['pyldap>=2.4.40']
 
 
 # Have code pull the long description from our README
@@ -71,7 +96,9 @@ setup(
 
     include_package_data = True,
 
-    install_requires = install_requires,
+    python_requires = '>=2.7,!=3.0.*',
+    install_requires = install_requirements,
+    extras_require = extra_requirements,
     provides = ['syncrepl_client'],
 
     license = 'BSD 3-Clause',
