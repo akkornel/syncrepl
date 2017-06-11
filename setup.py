@@ -46,13 +46,19 @@ else:
     raise OSError('Python 2.7, 3.1, or later is required!')
 
 
-# Let setup handle the rest
+# Have code pull the long description from our README
+def readme():
+    with open('README.rst') as file:
+        return file.read()
 
+
+# Let setuptools handle the rest
 setup(
     version = __version__,
 
     name = 'syncrepl-client',
     description = 'An easier-to-use LDAP syncrepl client',
+    long_description = readme(),
 
     keywords = 'ldap syncrepl',
 
