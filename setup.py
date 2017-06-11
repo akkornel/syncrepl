@@ -48,7 +48,7 @@ else:
 # Let setup handle the rest
 
 setup(
-    version = '0.75',
+    version = '0.80',
 
     name = 'syncrepl-client',
     description = 'An easier-to-use LDAP syncrepl client',

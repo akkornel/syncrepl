@@ -34,7 +34,7 @@ import threading
 
 from . import exceptions
 
-__version__ = '0.75'
+__version__ = '0.80'
 
 class SyncreplMode(Enum):
     """
