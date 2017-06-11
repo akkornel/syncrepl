@@ -430,6 +430,12 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         return self.unbind()
 
 
+    @staticmethod
+    def throw_closederror(*args, **kwargs):
+        # Special Monkey-Patching method!
+        raise exceptions.ClosedError()
+
+
     def unbind(self):
         """Safely save state and disconnect from the LDAP server.
 
@@ -459,7 +465,23 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         self.__uuid_attrs.close()
         self.__data.close()
         self.deleted = True
-        return SimpleLDAPObject.unbind(self)
+        unbind_result = SimpleLDAPObject.unbind(self)
+
+        # Monkey-patch most of our methods away
+        self.__init__ = self.throw_closederror
+        self.__exit__ = self.throw_closederror
+        self.please_stop = self.throw_closederror
+        self.poll = self.throw_closederror
+        self.sync = self.throw_closederror
+        self.syncrepl_get_cookie = self.throw_closederror
+        self.syncrepl_set_cookie = self.throw_closederror
+        self.syncrepl_refreshdone = self.throw_closederror
+        self.syncrepl_delete = self.throw_closederror
+        self.syncrepl_present = self.throw_closederror
+        self.syncrepl_entry = self.throw_closederror
+
+        # Return the result from SimpleLDAPObject
+        return unbind_result
 
 
     def __del__(self):
@@ -536,10 +558,6 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
           To request safe, consistent teardown of the connection, call
           :meth:`~syncrepl_client.Syncrepl.please_stop`.
         """
-
-        # Make sure we aren't running on a closed object.
-        if self.deleted:
-            raise ReferenceError
 
         # We default poll_output to True because, if the poll times out, that
         # causes an exception (so the variable doesn't get set).
