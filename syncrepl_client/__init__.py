@@ -33,8 +33,10 @@ from sys import argv, exit, version_info
 import threading
 
 from . import exceptions
+from . import _version
 
-__version__ = '0.90'
+__version__ = _version.__version__
+
 
 class SyncreplMode(Enum):
     """

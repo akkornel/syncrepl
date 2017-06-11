@@ -16,9 +16,9 @@
 # https://github.com/akkornel/syncrepl/blob/master/LICENSE_others.md
 
 
+import re
 import setuptools
 from setuptools import setup, find_packages
-from syncrepl_client import __version__
 from sys import argv, version_info
 
 
@@ -71,6 +71,17 @@ else:
     extra_requirements[":python_version>='3.1'"] = ['pyldap==2.4.35.1+UUIDpatch,>=2.4.40']
 
 
+# Have code pull the version number from _version.py
+def version():
+    with open('syncrepl_client/_version.py') as file:
+        regex = r"^__version__ = '(.+)'$"
+        matches = re.search(regex, file.read(), re.M)
+        if matches:
+            return matches.group(1)
+        else:
+            raise LookupError('Unable to find version number')
+
+
 # Have code pull the long description from our README
 def readme():
     with open('README.rst') as file:
@@ -79,9 +90,8 @@ def readme():
 
 # Let setuptools handle the rest
 setup(
-    version = __version__,
-
     name = 'syncrepl-client',
+    version = version(),
     description = 'An easier-to-use LDAP syncrepl client',
     long_description = readme(),
 
