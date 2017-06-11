@@ -1,30 +1,30 @@
-.. image:: https://img.shields.io/pypi/status/syncrepl_client.svg
+.. |status| image:: https://img.shields.io/pypi/status/syncrepl_client.svg
    :target: https://pypi.python.org/pypi/syncrepl-client
    :alt: Software Status
 
-.. image:: https://img.shields.io/pypi/v/syncrepl_client.svg
+.. |version| image:: https://img.shields.io/pypi/v/syncrepl_client.svg
    :target: https://pypi.python.org/pypi/syncrepl-client
    :alt: Current Version
 
-|
-
-.. image:: https://img.shields.io/pypi/pyversions/syncrepl_client.svg
+.. |python| image:: https://img.shields.io/pypi/pyversions/syncrepl_client.svg
    :target: https://pypi.python.org/pypi/syncrepl-client
    :alt: Supported Python Versions
 
-.. image:: https://img.shields.io/pypi/l/syncrepl_client.svg
+.. |license| image:: https://img.shields.io/pypi/l/syncrepl_client.svg
    :target: https://github.com/akkornel/syncrepl/blob/master/AUTHORS
    :alt: BSD 3-Clause License
 
-|
-
-.. image:: http://readthedocs.org/projects/syncrepl-client/badge/?version=latest
+.. |docs| image:: http://readthedocs.org/projects/syncrepl-client/badge/?version=latest
    :target: http://syncrepl-client.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 
-.. image:: https://img.shields.io/coverity/scan/12870.svg
+.. |coverity| image:: https://img.shields.io/coverity/scan/12870.svg
    :target: https://scan.coverity.com/projects/akkornel-syncrepl
    :alt: Coverity Scan Status
+
++--------------------+--------------------+-------------------+
+| |status| |version| | |python| |license| | |docs| |coverity| |
++--------------------+--------------------+-------------------+
 
 Oh No!
 ======
