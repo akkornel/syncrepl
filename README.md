@@ -79,6 +79,9 @@ above.  The LDAP server handles the work of figuring out what you can see.
   * For Python 3, [pyldap 2.4.40](https://github.com/pyldap/pyldap) or later is
     needed.
 
+  For older versions of python-ldap and pyldap, patches might be availble.  See
+  the `patches` directory.
+
 * A *fast* data store which is large enough to store a copy of all the LDAP
   data received, and an equivalent amount of RAM.
 
