@@ -1,3 +1,9 @@
+[![PyPI](https://img.shields.io/pypi/status/syncrepl_client.svg)]()
+[![PyPI](https://img.shields.io/pypi/v/syncrepl_client.svg)](https://pypi.python.org/pypi/syncrepl-client)
+
+[![PyPI](https://img.shields.io/pypi/pyversions/syncrepl_client.svg)]()
+[![PyPI](https://img.shields.io/pypi/l/syncrepl_client.svg)](https://github.com/akkornel/syncrepl/blob/master/AUTHORS)
+
 [![Documentation Status](http://readthedocs.org/projects/syncrepl-client/badge/?version=latest)](http://syncrepl-client.readthedocs.io/en/latest/?badge=latest)
 [![Coverity Scan
 Status](https://scan.coverity.com/projects/12870/badge.svg)](https://scan.coverity.com/projects/akkornel-syncrepl)
