@@ -27,6 +27,7 @@ Welcome to Syncrepl Client's documentation!
    Requirements <requirements>
    The Client Class <client>
    Callbacks <callbacks>
+   Exceptions <exceptions>
    Index <genindex>
 
 **syncrepl_client** is a Python module that makes LDAP Syncrepl easy to use.
