@@ -54,6 +54,8 @@ setup(
     name = 'syncrepl-client',
     description = 'An easier-to-use LDAP syncrepl client',
 
+    keywords = 'ldap syncrepl',
+
     author = 'A. Karl Kornel',
     author_email = 'karl@kornel.us',
 
