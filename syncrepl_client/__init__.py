@@ -350,12 +350,12 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
             try:
                 ldap_url = ldapurl.LDAPUrl(ldap_url)
             except:
-                raise ValueError
+                raise exceptions.LDAPURLParseError(ldap_url)
 
         # If no ldap_url was provided, pull from state.
         if ldap_url is None:
             if 'url' not in self.__data:
-                raise ValueError
+                raise exceptions.LDAPUrlError
             ldap_url = self.__data['url']
 
         # Check if someone's trying to change the existing LDAP URL.
@@ -372,7 +372,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
                 (current_url.scope != new_url.scope) or
                 (current_url.filterstr != new_url.filterstr)
                ):
-                raise LDAPUrlError
+                raise exceptions.LDAPUrlConflict(current_url, newurl)
 
             # We allow changes to other attributes (like host, who, and cred)
             # even though they may cause weird search result changes (for
