@@ -115,7 +115,7 @@ setup(
     license = 'BSD 3-Clause',
 
     classifiers = [
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Environment :: No Input/Output (Daemon)',
         'Intended Audience :: Developers',
