@@ -26,11 +26,6 @@
 | |status| |version| | |python| |license| | |docs| |coverity| |
 +--------------------+--------------------+-------------------+
 
-Oh No!
-======
-
-You really shouldn't be looking at this.  We're not ready yet!
-
 What is This?
 =============
 
