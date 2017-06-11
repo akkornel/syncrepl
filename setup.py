@@ -72,15 +72,20 @@ setup(
     include_package_data = True,
 
     install_requires = install_requires,
+    provides = ['syncrepl_client'],
 
     license = 'BSD 3-Clause',
 
     classifiers = [
         'Development Status :: 3 - Alpha',
+        'Environment :: Console',
         'Environment :: No Input/Output (Daemon)',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: BSD License',
+        'Operating System :: MacOS :: MacOS X',
+        'Operating System :: POSIX',
+        'Operating System :: Unix',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.3',
