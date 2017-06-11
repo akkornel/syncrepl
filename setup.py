@@ -17,6 +17,7 @@
 
 
 from setuptools import setup, find_packages
+from syncrepl_client import __version__
 from sys import version_info
 
 
@@ -48,7 +49,7 @@ else:
 # Let setup handle the rest
 
 setup(
-    version = '0.80',
+    version = __version__,
 
     name = 'syncrepl-client',
     description = 'An easier-to-use LDAP syncrepl client',
