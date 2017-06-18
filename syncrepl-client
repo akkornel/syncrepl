@@ -1,0 +1,159 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# vim: ts=4 sw=4 et
+
+# syncrepl_client demo program.
+#
+# Refer to the AUTHORS file for copyright statements.
+#
+# This file is made available under the terms of the BSD 3-Clause License,
+# the text of which may be found in the file `LICENSE.md` that was included
+# with this distribution, and also at
+# https://github.com/akkornel/syncrepl/blob/master/LICENSE.md 
+#
+# The Python docstrings contained in this file are also made available under the terms
+# of the Creative Commons Attribution-ShareAlike 4.0 International Public License,
+# the text of which may be found in the file `LICENSE_others.md` that was included
+# with this distribution, and also at
+# https://github.com/akkornel/syncrepl/blob/master/LICENSE_others.md
+#
+
+
+from argparse import ArgumentParser
+import signal
+from syncrepl_client import Syncrepl, SyncreplMode
+from syncrepl_client.callbacks import LoggingCallback
+from syncrepl_client._version import __version__
+from sys import argv, exit
+
+
+# Set up arguments, and parse
+
+argp = ArgumentParser(
+    description='A demonstration LDAP Syncrepl client.',
+    epilog="""
+For Syncrepl Client documentation, go to\n
+http://syncrepl-client.readthedocs.io/en/latest/
+"""
+)
+
+argp.add_argument('-V', '--version',
+    action='version',
+    version='syncrepl_client version ' + __version__,
+    help='Print the installed version of syncrepl_client'
+)
+argp.add_argument('--persist',
+    action='store_true',
+    required=False,
+    help='Keep the connection open after refresh, to receive real-time changes.'
+)
+argp.add_argument('url',
+    type=str,
+    help='An LDAP URL with all information required to do work.'
+)
+argp.add_argument('prefix',
+    type=str,
+    help='A path and filename prefix, to store data files.'
+)
+
+args = argp.parse_args()
+
+# If persist mode is use, check for thread support.
+
+if args.persist is True:
+    try:
+        import threading
+    except ImportError:
+        print('Your Python does not support threads!')
+        print('Please run without --persist, or change your Python.')
+        sys.exit(1)
+
+
+# Print out prefix and search mode.
+
+print('Data files will be stored here:', args.prefix)
+
+print(('Refresh-and-persist'
+       if args.persist is True
+       else 'Refresh-only'
+      ),
+      'mode will be used'
+)
+
+# Set up the client.
+# The arguments are simple, because the LDAP URL contains most of the info.
+
+print('CLIENT SETUP START')
+client = Syncrepl(data_path=args.prefix,
+                  callback=LoggingCallback,
+                  ldap_url=args.url,
+                  mode=(SyncreplMode.REFRESH_AND_PERSIST
+                        if args.persist is True
+                        else SyncreplMode.REFRESH_ONLY
+                       )
+         )
+print('CLIENT SETUP COMPLETE!')
+
+# What we do now depends on our mode.
+
+if args.persist is True:
+
+    # In persist mode, we should use threading.
+    # Out main thread will watch for signals, and safely stop the Syncrepl.
+
+    print('THREAD SETUP START')
+    thread=threading.Thread(target=client.run)
+    print('THREAD SETUP COMPLETE')
+   
+    # We need to make sure that signals don't cause us to exit uncleanly.
+    print('SIGNAL SETUP START')
+
+    # Define a simple signal-handler, which calls the (thread-safe)
+    # `please_stop` method, to ask the Syncrepl client to end the search
+    # safely.
+    def stop_handler(signal, frame):
+        print('STOP REQUEST START')
+        client.please_stop()
+        print('STOP REQUEST COMPLETE')
+
+    # Set our handler to catch common signals that we might receive.
+    # * SIGHUP is sent if the terminal closes while we are running.
+    # * SIGINT is the signal we get by pressing Control-C.
+    # * SIGTERM is the default signal that `kill` sends us.
+    signal.signal(signal.SIGHUP, stop_handler)
+    signal.signal(signal.SIGINT, stop_handler)
+    signal.signal(signal.SIGTERM, stop_handler)
+    print('SIGNAL SETUP COMPLETE')
+   
+    # Launch the thread, and then wait for it to exit.
+    # Signal interruptions would happen in here.
+
+    print('THREAD START')
+    thread.start()
+    thread.join()
+    print('THREAD END')
+
+else:
+
+    # In refresh-only mode, no threading is needed, because we just run
+    # until the end.
+
+    while True:
+        # We call `poll()`, and take note of the result.
+        print('CLIENT LOOP START')
+        loop_result = client.poll()
+        print('CLIENT LOOP END')
+        print("\tLoop Result:", loop_result)
+
+        # If the loop is False, then there is nothing else to do.
+        # Otherwise, some work has been done, but the server has more.
+        if loop_result is False:
+            print('CLIENT LOOP COMPLETE!')
+            break
+
+# Clean up and exit
+
+print('CLIENT EXIT START')
+client.unbind()
+print('CLIENT EXIT COMPLETE!')
+exit(0)

@@ -104,6 +104,7 @@ setup(
     url = 'http://github.com/akkornel/syncrepl',
 
     packages = find_packages(),
+    scripts = ['syncrepl-client'],
     zip_safe = True,
     include_package_data = True,
 
