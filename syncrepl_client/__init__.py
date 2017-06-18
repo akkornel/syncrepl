@@ -176,7 +176,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
 
         :type mode: A member of the :class:`~syncrepl_client.SyncreplMode` enumeration.
 
-        :param ldap_url: A complete LDAP URL string, or an LDAPUrl instance, or None.
+        :param ldap_url: A complete LDAP URL string, or an LDAPUrl instance, or :obj:`None`.
 
         :type ldap_url: str or ldapurl.LDAPUrl or None
 
@@ -230,8 +230,9 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
           bind).  When using simple bind, the `X-BINDPW` extension must hold
           the bind password.
 
-        The `bind_complete()` callback will be called at some point during the
-        constructor's execution.
+        The :meth:`~syncrepl_client.callbacks.BaseCallback.bind_complete`
+        callback will be called at some point during the constructor's
+        execution.
 
         Returns a ready-to-use instance.  The next call you should make to the
         instance is :meth:`~syncrepl_client.Syncrepl.poll`.  Continue calling
