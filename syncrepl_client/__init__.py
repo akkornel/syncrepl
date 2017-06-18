@@ -30,7 +30,10 @@ import ldapurl
 import shelve
 import signal
 from sys import argv, exit, version_info
-import threading
+try:
+    import threading
+except ImportError:
+    import dummy_threading as threading
 
 from . import exceptions
 from . import _version
@@ -62,10 +65,19 @@ class SyncreplMode(Enum):
     timeout takes place (that will throw :class:`ldap.TIMEOUT`), you cancel the
     search (that will throw :class:`ldap.CANCELLED`), or something else goes
     wrong.
+
+    .. note::
+        When running a Syncrepl search in refresh-and-persist mode, it is
+        **strongly** recommended that you run the actual search operation in a
+        thread, so that you can catch signals which would otherwise cause an
+        unclean termination of the Syncrepl search.
+
+        For more information, see the :meth:`~syncrepl_client.Syncrepl.run`
+        method, which is what you should use as the thread's target.
     """
 
 
-class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
+class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
     '''
     This class implements the Syncrepl client.  You should have one instance of
     this class for each syncrepl search.
@@ -241,9 +253,6 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         request safe teardown of the connection, call
         :meth:`~syncrepl_client.Syncrepl.please_stop`.
         """
-
-        # Set up the thread
-        threading.Thread.__init__(self)
 
         # Set some instanace veriables.
         self.__in_refresh = True
@@ -607,6 +616,59 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject, threading.Thread):
         # Return.  The client will have to continue polling until the LDAP
         # server is done with us.
         return poll_output
+
+
+    def run(self):
+        """Run :meth:`~syncrepl_client.Syncrepl.poll` until it returns :obj:`False`.
+
+        :returns: None
+
+        Runs the :meth:`~syncrepl_client.Syncrepl.poll` method continuously,
+        until it returns :obj:`False`.  This is a :obj:`callable`.
+
+        In refresh-only mode, this method is good to use, as it saves you from
+        having to write a `while` loop.  Once this method returns, you
+        know that the refresh has completed, and you are clear to call
+        :meth:`~syncrepl_client.Syncrepl.unbind` to clean up the instance.
+
+        In refresh-and-persist mode, this method should only be called when you
+        are running this instance in its own thread.  It will call
+        :meth:`~syncrepl_client.Syncrepl.poll` effectively forever, until the
+        LDAP server goes away.  For that reason, you should use this method as
+        the target to pass to the :class:`threading.Thread` constructor.  Doing
+        so allows the Syncrepl search to run while your main thread can get on
+        with other work.  In particular, your main thread should catch signals
+        like `SIGHUP`, `SIGINT`, and `SIGTERM`.
+
+        .. note::
+
+            When a Syncrepl search is actively running, most of the execution
+            time is spent inside OpenLDAP client code, waiting for updates from
+            the LDAP server.  If OpenLDAP client code receives a signal, it
+            normally responds by abruptly closing the LDAP connection and
+            raising an exception.  That will cause the Syncrepl search to
+            stop in an unsafe manner.
+
+            You *really* should run refresh-and-persist Syncrepl searches in a
+            thread.
+
+        When you are running this method in a thread, use
+        :meth:`~syncrepl_client.Syncrepl.please_stop` to request the safe
+        shutdown of the Syncrepl search.  Once the thread has been
+        :meth:`~threading.Thread.join`-ed, remember to call
+        :meth:`~syncrepl_client.Syncrepl.unbind` to clean up the instance.
+
+        .. warning::
+
+            :meth:`~syncrepl_client.Syncrepl.please_stop` is the **only**
+            thread-safe method!  Once you have spawned your Syncrepl search
+            thread, no other methods (except for
+            :meth:`~syncrepl_client.Syncrepl.please_stop`) may be called until
+            the thread has been :meth:`~threading.Thread.join`-ed.
+        """
+        poll_result = True
+        while poll_result:
+            poll_result = self.poll()
 
 
     def sync(self, force=False):

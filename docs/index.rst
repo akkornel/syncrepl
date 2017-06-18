@@ -97,6 +97,9 @@ Requirements
   If you use Python 2.7 or 3.3, you will also need
   `enum34`_.
 
+  If you plan on doing "refresh and persist" operations (which run for a long
+  time), your Python should support threads.
+
 * An appropriate Python LDAP library:
 
   * For Python 2.7, `python-ldap`_ 2.4.40 or later is needed.
