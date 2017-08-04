@@ -748,6 +748,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         the LDAP server.  This cookie is presented to the LDAP server when we
         reconnect, so that it knows how far behind we are.
         """
+        self.callback.cookie_change(cookie)
         self.__data['cookie'] = cookie
         self.sync()
 

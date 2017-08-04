@@ -271,6 +271,29 @@ class BaseCallback(object):
         pass
 
     @classmethod
+    def cookie_change(cls, cookie):
+        """Called to log a change in Syncrepl cookie.
+
+        :param str cookie: The new Syncrepl cookie.
+
+        :return None - any returned value is ignored.
+
+        This callback happens any time the LDAP server sends us a new Syncrepl
+        cookie.
+
+        The Syncrepl cookie is an opaque string, which we send to the LDAP
+        server at the start of a Syncrepl search.  If we do not have one, then
+        the LDAP server knows to send us everything.  If we *do* have one, then
+        the LDAP server can use that to know how far behind we are, and to send
+        us just the changes.
+
+        This callback can happen in all modes, and in all phases, as it is
+        up to the LDAP server to give us a new Syncrepl cookie, when it is
+        appropriate to do so.
+        """
+        pass
+
+    @classmethod
     def debug(cls, message):
         """Called to log debug messages.
 
@@ -348,6 +371,10 @@ class LoggingCallback(BaseCallback):
             print("\t", attr, sep='', file=cls.dest)
             for value in new_attrs[attr]:
                 print("\t\t", value, sep='', file=cls.dest)
+
+    @classmethod
+    def cookie_change(cls, cookie):
+        print('COOKIE CHANGED:', cookie)
 
     @classmethod
     def debug(cls, message):
