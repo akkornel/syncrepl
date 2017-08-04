@@ -18,4 +18,4 @@
 # https://github.com/akkornel/syncrepl/blob/master/LICENSE_others.md
 #
 
-__version__ = '0.93'
+__version__ = '0.94'
