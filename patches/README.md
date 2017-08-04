@@ -67,8 +67,7 @@ python-ldap doesn't have a bug tracker.  To track the progress of this patch,
 see [the python-ldap mailing list
 thread](https://mail.python.org/pipermail/python-ldap/2017q2/003924.html).
 
-If python-ldap does not accept the patch, it will be submitted instead to
-pyldap for inclusion there.
+`pyldap` has the patch in version 2.4.37 and later.
 
 The file `pyldap.patch` contains a form of patch that you can apply locally,
 which will fix this problem.
