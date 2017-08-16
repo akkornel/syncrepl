@@ -255,6 +255,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         """
 
         # Set some instanace veriables.
+        self.__ldap_setup_complete = False
         self.__in_refresh = True
         self.__present_uuids = []
         self.deleted = False
@@ -270,6 +271,12 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         assert(isinstance(mode, SyncreplMode))
 
         # Open our shelves
+        # We pre-set each variable, so we know what's been done if we have to
+        # clean up after an exception.
+        self.__data = None
+        self.__uuid_dn_map = None
+        self.__dn_uuid_map = None
+        self.__uuid_attrs = None
         try:
             self.__data = shelve.open(data_path + 'data', writeback=True)
             self.__uuid_dn_map = shelve.open(data_path + 'uuid_map', writeback=True)
@@ -410,6 +417,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         # Callback to mark a successful bind.
         self.callback.bind_complete(self)
+        self.__ldap_setup_complete = True
 
         # Before we start, we have to check if a filter was set.  If not, set the
         # default that the LDAP module uses.
@@ -472,12 +480,22 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         deleted yet.  To start a new client, make a new instance of
         :class:`~syncrepl_client.Syncrepl`.
         """
-        self.__uuid_dn_map.close()
-        self.__dn_uuid_map.close()
-        self.__uuid_attrs.close()
-        self.__data.close()
+
+        # We can't be totally sure that all external stuff is good, so first
+        # we make sure that something exists before we close/unbind it.
+        if self.__uuid_dn_map is not None:
+            self.__uuid_dn_map.close()
+        if self.__dn_uuid_map is not None:
+            self.__dn_uuid_map.close()
+        if self.__uuid_attrs is not None:
+            self.__uuid_attrs.close()
+        if self.__data is not None:
+            self.__data.close()
+        if self.__ldap_setup_complete is True:
+            unbind_result = SimpleLDAPObject.unbind(self)
+        else:
+            unbind_result = True
         self.deleted = True
-        unbind_result = SimpleLDAPObject.unbind(self)
 
         # Monkey-patch most of our methods away
         self.__init__ = self.throw_closederror
@@ -492,12 +510,13 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         self.syncrepl_present = self.throw_closederror
         self.syncrepl_entry = self.throw_closederror
 
-        # Return the result from SimpleLDAPObject
+        # Return the result from SimpleLDAPObject (or just True)
         return unbind_result
 
 
     def __del__(self):
         # Last-resort attempt to make sure things are cleaned up.
+        # NOTE: If there was a problem in initialization, unbind will catch it.
         if self.deleted is not True:
             return self.unbind()
 
