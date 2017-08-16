@@ -350,7 +350,6 @@ class LoggingCallback(BaseCallback):
             for value in attrs[attr]:
                 print("\t\t", value, sep='', file=cls.dest)
 
-
     @classmethod
     def record_delete(cls, dn):
         print('DELETED RECORD:', dn, file=cls.dest)
