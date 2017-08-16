@@ -795,10 +795,36 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         callback.
         """
 
+        # Let's make a class to represent our LDAP items!
+        # We implement the methods needed for a Dictionary.
+        # The keys are DNs; the values are attribute dicts.
+        class ItemList(object):
+            def __init__(self, dn_uuid_map, uuid_attrs_map):
+                self.__dn_uuid_map = dn_uuid_map
+                self.__uuid_attrs_map = uuid_attrs_map
+            def __len__(self):
+                return len(self.__dn_uuid_map)
+            def __contains__(self, dn):
+                return [True if dn in self.__dn__uuid_map else False]
+            def __iter__(self):
+                return iter(self.__dn_uuid_map)
+            # __next__() and next() provided by the shelve iterator
+            def __getitem__(self, dn):
+                uuid = self.__dn_uuid_map[dn]
+                return self.__uuid_attrs_map[uuid]
+            def __setitem__(self, dn):
+                raise AttributeError('Syncrepl is read-only')
+            def __delitem__(self, dn):
+                raise AttributeError('Syncrepl is read-only')
+
         # Besides doing a callback, we update an internal tracking variable,
         # and we delete our list of present items (that's only used in the
         # Refresh mode).
-        self.callback.refresh_done()
+
+        self.callback.refresh_done(ItemList(
+            self.__dn_uuid_map,
+            self.__uuid_attrs
+        ))
         self.__in_refresh = False
         del self.__present_uuids
         self.sync()

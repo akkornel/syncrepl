@@ -107,8 +107,10 @@ class BaseCallback(object):
         pass
 
     @classmethod
-    def refresh_done(cls):
+    def refresh_done(cls, items):
         """Called to mark the end of the refresh phase.
+
+        :param dict items: The items currently in the directory.
 
         :return: None -- any returned value is ignored.
 
@@ -117,9 +119,21 @@ class BaseCallback(object):
         LDAP server (at least, the part of the directory which 
         matches your search and your access).
 
-        If you need to do any sort of synchronization with anyone else, this is 
-        the best time to do it.  Once you return from this callback, the 
-        persist phase will begin.
+        :data:`items` is a dictionary (or, an object which behaves like a
+        dictionary) where the keys are DNs and the values are dicts of
+        attributes & their values.  Every item in :data:`items` is present in
+        the directory at the time this callback started.
+
+        .. note::
+
+            :data:`items` is read-only.  Any attempt to add, change, or delete
+            and item will cause an :obj:`AttributeError` to be raised.
+
+        .. warning::
+
+            The content :data:`items` is guaranteed to be consistent *only
+            inside this callback*.  Once this callback returns, any attempts to
+            access :data:`items` again will result in undefined behavior.
 
         If you need to do any sort of synchronization with anyone else, this is
         the best time to do it.  Once you return from this callback, the
@@ -339,8 +353,17 @@ class LoggingCallback(BaseCallback):
         print("\tWE ARE:", ldap.whoami_s(), file=cls.dest)
 
     @classmethod
-    def refresh_done(cls):
+    def refresh_done(cls, items):
         print('REFRESH COMPLETE!', file=cls.dest)
+        print('BEGIN DIRECTORY CONTENTS:', file=cls.dest)
+        for item in items:
+            print(item, file=cls.dest)
+            attrs = items[item]
+            for attr in attrs.keys():
+                print("\t", attr, sep='', file=cls.dest)
+                for value in attrs[attr]:
+                    print("\t\t", value, sep='', file=cls.dest)
+        print('END DIRECTORY CONTENTS', file=cls.dest)
 
     @classmethod
     def record_add(cls, dn, attrs):
