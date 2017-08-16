@@ -112,11 +112,6 @@ class BaseCallback(object):
 
         :return: None -- any returned value is ignored.
 
-        .. note::
-
-            This callback is **not** used when you are in refresh-only mode.
-            This callback is only used in refresh-and-persist mode.
-
         When receiving this callback, you know that the refresh phase has 
         completed, and your view of the directory is now consistent with the 
         LDAP server (at least, the part of the directory which 
@@ -126,10 +121,12 @@ class BaseCallback(object):
         the best time to do it.  Once you return from this callback, the 
         persist phase will begin.
 
-        If you are operating in refresh-only mode, instead of receiving
-        this callback, the :class:`~syncrepl_client.Syncrepl`
-        :meth:`~syncrepl_client.Syncrepl.poll` method will return
-        :class:`False`.
+        If you need to do any sort of synchronization with anyone else, this is
+        the best time to do it.  Once you return from this callback, the
+        persist phase will begin.  If you are operating in refresh-only mode,
+        then as soon as this callback completes,
+        :meth:`syncrepl_client.Syncrepl.poll` will return :obj:`False`.  It is
+        then safe to call :meth:`~syncrepl_client.Syncrepl.unbind`.
         """
         pass
 
