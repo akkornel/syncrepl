@@ -95,7 +95,7 @@ The Syncrepl client has a number of direct and indirect requirements.
   It is likely that Python 2.6—and older versions of Python 3—will work, but
   those have not yet been tested.  This entry will update once they are!
 
-* `python-ldap`_ 2.4.40 or later (Python 2), or `pyldap`_ 2.4.40 or later
+* `python-ldap`_ 99 or later (Python 2), or `pyldap`_ 2.4.37 or later
   (Python 3).
 
   python-ldap is an object-oriented wrapper around `libldap`, and works in
@@ -107,18 +107,13 @@ The Syncrepl client has a number of direct and indirect requirements.
 
   .. warning::
 
-    As of this writing, the latest releases of python-ldap and pyldap are
-    2.4.38 and 2.4.35.1, respectively.  However, both have bugs:
+    As of this writing, the latest release of python-ldap is 2.4.41.
+    However, it has a bug which affects us:
 
     * python-ldap has a bug in which the `ldap.TIMEOUT` exception is not
       properly raised back to the client.
 
-    * pyldap has a bug on Python 3 related to the UUID constructor, where a
-      Unicode string is being provided in a place where a bytes string is
-      expected.
-
-    Both bugs have been reported to the python-ldap project; for the latter
-    bug, a Python 2-compatible fix has been suggested.
+    The bug has been reported to the python-ldap project.
 
 .. _python-ldap: https://www.python-ldap.org
 .. _pyldap: https://github.com/pyldap/pyldap

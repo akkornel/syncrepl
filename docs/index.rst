@@ -102,7 +102,7 @@ Requirements
 
 * An appropriate Python LDAP library:
 
-  * For Python 2.7, `python-ldap`_ 2.4.40 or later is needed.
+  * For Python 2.7, `python-ldap`_ 99 or later is needed.
 
   * For Python 3, `pyldap`_ 2.4.37 or later is needed.
 
