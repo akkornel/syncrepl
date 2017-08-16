@@ -123,6 +123,18 @@ The Syncrepl client has a number of direct and indirect requirements.
 .. _python-ldap: https://www.python-ldap.org
 .. _pyldap: https://github.com/pyldap/pyldap
 
+* The `pyasn1`_ module.
+
+  In Syncrepl, messages from the LDAP server are encoded using ASN.1.
+  `libldap`_ does not decode these for us, so we use the well-established
+  `pyasn1`_ module to handle the decoding.
+
+  Technically, this is a requirement of `python-ldap`_ / `pyldap`_.  It is an
+  optional dependency for them, and is only used when using
+  :mod:`ldap.syncrepl`.  That makes it a requirement for us.
+
+.. _pyasn1: http://pyasn1.sourceforge.net
+
 
 Storage Requirements
 --------------------

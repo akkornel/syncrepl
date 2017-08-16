@@ -106,6 +106,12 @@ Requirements
 
   * For Python 3, `pyldap`_ 2.4.37 or later is needed.
 
+* The `pyasn1`_ module.
+
+  Technically, this is a requirement of `python-ldap`_ / `pyldap`_.  It is an
+  optional dependency for them, and is only used when using
+  :mod:`ldap.syncrepl`.  That makes it a requirement for us.
+
 * A fast data store, large enough to store a copy of all the LDAP data
   received, and a corresponding amount of RAM.
 
@@ -119,6 +125,7 @@ Lots more details are available on the :doc:`Requirements page </requirements>`.
 .. _enum34: https://bitbucket.org/stoneleaf/enum34
 .. _python-ldap: https://www.python-ldap.org
 .. _pyldap: https://github.com/pyldap/pyldap
+.. _pyasn1: http://pyasn1.sourceforge.net
 .. _Section 18.3.1: https://www.openldap.org/doc/admin24/replication.html#Syncrepl
 .. _Admin Guide: https://www.openldap.org/doc/admin24/index.html
 

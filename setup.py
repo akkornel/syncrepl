@@ -70,6 +70,10 @@ else:
     extra_requirements[":python_version<='2.7'"] = ['python-ldap>=2.4.40']
     extra_requirements[":python_version>='3.1'"] = ['pyldap>=2.4.37']
 
+# We need pyasn1.
+# Well, actually python-ldap/pyldap require pyasn1, but it's an optional
+# dependency for them, as it is only used with syncrepl.  So, we require it!
+install_requirements.append('pyasn1')
 
 
 # Have code pull the version number from _version.py
