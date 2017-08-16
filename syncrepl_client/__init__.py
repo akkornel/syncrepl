@@ -400,8 +400,14 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             # Since we haven't thrown, allow the new URL.
             self.__data['url'] = new_url
 
+        # Generate a URL that's safe to hand to the LDAP client.
+        # See https://mail.python.org/pipermail/python-ldap/2017q3/003934.html
+        safe_url = ldapurl.LDAPUrl()
+        safe_url.urlscheme = ldap_url.urlscheme
+        safe_url.hostport = ldap_url.hostport
+
         # Finally, we can set up our LDAP client!
-        SimpleLDAPObject.__init__(self, ldap_url.unparse(), **kwargs)
+        SimpleLDAPObject.__init__(self, safe_url.unparse(), **kwargs)
 
         # Bind to the server (this also triggers connection setup)
         if ldap_url.who is None:
