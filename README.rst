@@ -120,6 +120,7 @@ Lots more details are available in `the Requirements page`_.
 
 .. _enum34: https://bitbucket.org/stoneleaf/enum34
 .. _python-ldap: https://www.python-ldap.org
+.. _pyasn1: http://pyasn1.sourceforge.net
 .. _pyldap: https://github.com/pyldap/pyldap
 .. _patches: https://github.com/akkornel/syncrepl/tree/master/patches
 .. _Section 18.3.1: https://www.openldap.org/doc/admin24/replication.html#Syncrepl
