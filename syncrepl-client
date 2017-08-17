@@ -52,6 +52,11 @@ argp.add_argument('--trace',
     required=False,
     help='Turn on trace messages from the underlying Python LDAP library, and OpenLDAP.'
 )
+argp.add_argument('--nodir',
+    action='store_true',
+    required=False,
+    help='Skip the directory dump when the refresh phase completes.'
+)
 argp.add_argument('url',
     type=str,
     help='An LDAP URL with all information required to do work.'
@@ -73,6 +78,17 @@ if args.persist is True:
         print('Please run without --persist, or change your Python.')
         sys.exit(1)
 
+# If the user does not want the directory dump at the end of the refresh phase,
+# then skip it, and instead just print a message marking the occasion.
+# Yes, I'm doing monkey-patching!
+
+if args.nodir is True:
+    @classmethod
+    def quiet_refresh_done(cls, items):
+        print('REFRESH COMPLETE!', file=cls.dest)
+        print('(Directory dump suppressed)', file=cls.dest)
+
+    LoggingCallback.refresh_done = quiet_refresh_done
 
 # Print out prefix and search mode.
 
