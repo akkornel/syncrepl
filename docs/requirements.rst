@@ -118,7 +118,7 @@ The Syncrepl client has a number of direct and indirect requirements.
 .. _python-ldap: https://www.python-ldap.org
 .. _pyldap: https://github.com/pyldap/pyldap
 
-* The `pyasn1`_ module.
+* The `pyasn1`_ module, at least version 0.2.2, and less than version 0.3.1.
 
   In Syncrepl, messages from the LDAP server are encoded using ASN.1.
   `libldap`_ does not decode these for us, so we use the well-established
@@ -127,6 +127,11 @@ The Syncrepl client has a number of direct and indirect requirements.
   Technically, this is a requirement of `python-ldap`_ / `pyldap`_.  It is an
   optional dependency for them, and is only used when using
   :mod:`ldap.syncrepl`.  That makes it a requirement for us.
+
+  In version 0.3.1, there were a number of breaking API changes.  This causes
+  occasional exceptions to be thrown.  Until `pyasn1`_ fixes the issue
+  (assuming it's a bug), or `pyldap`_ / `python-ldap`_ change their code,
+  `pyasn1`_ 0.3.1 and later may not be used.
 
 .. _pyasn1: http://pyasn1.sourceforge.net
 

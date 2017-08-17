@@ -106,7 +106,7 @@ Requirements
 
   Older versions may be supported.  Read more in `patches`_.
 
-* The `pyasn1`_ module.
+* The `pyasn1`_ module, at least version 0.2.2, and less than version 0.3.1.
 
 * A fast data store, large enough to store a copy of all the LDAP data
   received, and a corresponding amount of RAM.

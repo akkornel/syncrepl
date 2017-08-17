@@ -106,7 +106,7 @@ Requirements
 
   * For Python 3, `pyldap`_ 2.4.37 or later is needed.
 
-* The `pyasn1`_ module.
+* The `pyasn1`_ module, at least version 0.2.2, and less than version 0.3.1.
 
   Technically, this is a requirement of `python-ldap`_ / `pyldap`_.  It is an
   optional dependency for them, and is only used when using
