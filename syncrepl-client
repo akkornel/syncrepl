@@ -47,6 +47,11 @@ argp.add_argument('--persist',
     required=False,
     help='Keep the connection open after refresh, to receive real-time changes.'
 )
+argp.add_argument('--trace',
+    action='store_true',
+    required=False,
+    help='Turn on trace messages from the underlying Python LDAP library, and OpenLDAP.'
+)
 argp.add_argument('url',
     type=str,
     help='An LDAP URL with all information required to do work.'
@@ -90,7 +95,11 @@ client = Syncrepl(data_path=args.prefix,
                   mode=(SyncreplMode.REFRESH_AND_PERSIST
                         if args.persist is True
                         else SyncreplMode.REFRESH_ONLY
-                       )
+                       ),
+                  trace_level=(5
+                               if args.trace is True
+                               else 0
+                      )
          )
 print('CLIENT SETUP COMPLETE!')
 
