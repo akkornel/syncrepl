@@ -27,7 +27,6 @@ import ldap
 from ldap.ldapobject import SimpleLDAPObject
 from ldap.syncrepl import SyncreplConsumer
 import ldapurl
-import shelve
 import signal
 from sys import argv, exit, version_info
 try:
@@ -35,6 +34,7 @@ try:
 except ImportError:
     import dummy_threading as threading
 
+from . import db
 from . import exceptions
 from . import _version
 
@@ -180,7 +180,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
     def __init__(self, data_path, callback, mode, ldap_url=None, **kwargs):
         """Instantiate, connect to an LDAP server, and bind.
 
-        :param str data_path: A path to where data files will be stored.
+        :param str data_path: A path to the database file.
 
         :param object callback: An object that receives callbacks.
 
@@ -525,6 +525,22 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         # NOTE: If there was a problem in initialization, unbind will catch it.
         if self.deleted is not True:
             return self.unbind()
+
+
+    def db(self):
+        """
+
+        :returns: A DBInterface instance.
+
+        Returns an instance of :class:`~syncrepl_client.db.DBInterface`, which
+        you can use.
+
+        .. warning::
+
+            Please read, understand, and observe all of the notes and warnings
+            in the :class:`~syncrepl_client.db.DBInterface` class!
+        """
+        return self.__db.clone()
 
 
     def please_stop(self):
