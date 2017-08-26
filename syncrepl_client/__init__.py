@@ -760,7 +760,6 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
             def __del__(self):
                 self.__syncrepl_cursor.close()
-                super(ItemList, self).__del__()
 
             def __syncrepl_populate(self):
                 rowlist = list()
