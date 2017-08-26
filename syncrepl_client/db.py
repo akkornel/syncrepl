@@ -45,7 +45,7 @@ def uuid_to_bytes(uuid):
     """
     return uuid.bytes
 
-def bytes_to_uuid(uuid_bytes):a
+def bytes_to_uuid(uuid_bytes):
     """Convert a string of bytes into a UUID.
 
     :param bytes uuid_bytes: A string of bytes.
@@ -294,7 +294,7 @@ class DBInterface(object):
 
         # Grab the list of tables, and make sure our version-number-containing
         # table is present.
-        if 'syncrepl_schema' is not in discovered_tables:
+        if 'syncrepl_schema' not in discovered_tables:
             raise exceptions.DBSchemaError('No schema table found')
 
         # Grab the schema version number from the table
@@ -327,7 +327,7 @@ class DBInterface(object):
 
         # Now we can validate the schema against the stated version.
 
-        elsif version == 1:
+        elif version == 1:
             pass
 
 
@@ -339,7 +339,7 @@ class DBInterface(object):
             return None
 
         # Start by upgrading us from version 0 to version 1.
-        if old_version == 0:
+        elif old_version == 0:
             c = self.__db.execute('''
                 CREATE TABLE syncrepl_schema (
                     version    UNSIGNED INT PRIMARY KEY
@@ -367,5 +367,5 @@ class DBInterface(object):
         # The next upgrade would be here.
 
         # Finally, catch cases where the schema is too new.
-        if old_version > CURRENT_SCHEMA_VERSION:
+        elif old_version > CURRENT_SCHEMA_VERSION:
             raise exceptions.SchemaVersionError('Schema too new')
