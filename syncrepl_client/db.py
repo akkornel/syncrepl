@@ -44,6 +44,7 @@ def uuid_to_bytes(uuid):
     :returns: A bytes object.
     """
     return uuid.bytes
+sqlite3.register_adapter(uuid.UUID, uuid_to_bytes)
 
 def bytes_to_uuid(uuid_bytes):
     """Convert a string of bytes into a UUID.
@@ -53,6 +54,7 @@ def bytes_to_uuid(uuid_bytes):
     :returns: A UUID object.
     """
     return uuid.UUID(bytes=uuid_bytes)
+sqlite3.register_converter('UUID', bytes_to_uuid)
 
 
 # We want to store an object into the database.
@@ -73,6 +75,7 @@ def object_to_bytes(object_in):
         )
     else:
         return pickle.dumps(object_in, pickle.HIGHEST_PROTOCOL)
+sqlite3.register_adapter(object, object_to_bytes)
 
 
 def bytes_to_object(object_bytes):
@@ -90,6 +93,8 @@ def bytes_to_object(object_bytes):
         )
     else:
         return pickle.loads(object_bytes)
+        # Register our custom types
+sqlite3.register_adapter('OBJECT', bytes_to_object)
 
 
 # This is the current schema version number.
@@ -191,11 +196,6 @@ class DBInterface(object):
             detect_types = sqlite3.PARSE_DECLTYPES
         )
 
-        # Register our custom types
-        self.__db.register_adapter(uuid.UUID, uuid_to_bytes)
-        self.__db.register_converter('UUID', bytes_to_uuid)
-        newbie.__db.register_adapter(object, object_to_bytes)
-        newbie.__db.register_adapter('OBJECT', bytes_to_dict)
 
         # Check (and, if necessary, upgrade) our schema.
         self._check_and_upgrade_schema()
@@ -236,10 +236,6 @@ class DBInterface(object):
         newbie.__db = sqlite3.connect(self.__data_path,
             detect_types = sqlite3.PARSE_DECLTYPES
         )
-        newbie.__db.register_adapter(uuid.UUID, uuid_to_bytes)
-        newbie.__db.register_converter('UUID', bytes_to_uuid)
-        newbie.__db.register_adapter(object, object_to_bytes)
-        newbie.__db.register_adapter('OBJECT', bytes_to_dict)
         return newbie
 
 
