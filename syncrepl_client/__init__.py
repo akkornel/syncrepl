@@ -28,6 +28,7 @@ from ldap.ldapobject import SimpleLDAPObject
 from ldap.syncrepl import SyncreplConsumer
 import ldapurl
 import signal
+import sqlite3
 from sys import argv, exit, version_info
 try:
     import threading
@@ -759,7 +760,10 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 self.__syncrepl_attrlist = dict()
 
             def __del__(self):
-                self.__syncrepl_cursor.close()
+                try:
+                    self.__syncrepl_cursor.close()
+                except sqlite3.ProgrammingError:
+                    pass
 
             def __syncrepl_populate(self):
                 rowlist = list()
