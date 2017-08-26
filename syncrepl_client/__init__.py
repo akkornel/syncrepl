@@ -194,7 +194,9 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         :returns: A Syncrepl instance.
 
-        :raises: syncrepl_client.exceptions.VersionError
+        :raises: syncrepl_client.exceptions.VersionError,
+        syncrepl_client.exceptions.LDAPUrlError,
+        syncrepl_client.exceptions.LDAPUrlConflict
 
         This is the :class:`~syncrepl_client.Syncrepl` class's constructor.  In
         addition to basic initialization, it is also responsible for making the
@@ -331,16 +333,16 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 raise exceptions.LDAPURLParseError(ldap_url)
 
         # If no ldap_url was provided, pull from state.
-        if ldap_url is None:
-            if 'url' not in self.__data:
-                raise exceptions.LDAPUrlError
-            ldap_url = self.__data['url']
+        # Grab the DB-stored URL.  If none was found, throw.
+        db_url = db.get_setting('syncrepl_url')
+        if db_url is None:
+            raise exceptions.LDAPUrlError
+        db_url = ldapurl.LDAPUrl(db_url)
 
         # Check if someone's trying to change the existing LDAP URL.
-        if (('url' in self.__data) and
-            (self.__data['url'] != ldap_url)
-        ):
-            current_url = self.__data['url']
+        if ldap_url != db_url:
+            # Temporary names, for clarity.
+            current_url = db_url
             new_url = ldap_url
 
             # If the stored URL doesn't match the passed URL,
@@ -350,15 +352,14 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 (current_url.scope != new_url.scope) or
                 (current_url.filterstr != new_url.filterstr)
                ):
-                raise exceptions.LDAPUrlConflict(current_url, newurl)
+                raise exceptions.LDAPUrlConflict(current_url, new_url)
 
             # We allow changes to other attributes (like host, who, and cred)
             # even though they may cause weird search result changes (for
             # example, due to differing ACLs between accounts).
 
             # Since we haven't thrown, allow the new URL.
-            self.__data['url'] = new_url
-
+            db.set_setting('syncrepl_url', str(new_url))
 
         # Finally, we can set up our LDAP client!
         SimpleLDAPObject.__init__(self, ldap_url.initializeUrl(), **kwargs)
