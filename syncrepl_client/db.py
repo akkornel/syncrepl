@@ -293,6 +293,7 @@ class DBInterface(object):
 
         # Let's see what tables we have.
         # We search for all table names that we've ever used.
+        discovered_tables = list()
         c = self.__db.execute('''
             SELECT name
               FROM sqlite_master
@@ -303,7 +304,8 @@ class DBInterface(object):
                        )
                    )
         ''')
-        discovered_tables = c.fetchall()
+        for discovered_table in c.fetchall():
+            discovered_tables.append(discovered_table[0])
 
         # If we don't have any tables, then we're at "schema version zero".
         # Go ahead and upgrade to the current version.
