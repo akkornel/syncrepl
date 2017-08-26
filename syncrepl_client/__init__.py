@@ -763,11 +763,11 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
             def __syncrepl_populate(self):
                 rowlist = list()
-                self.__snycrepl_cursor.execute('''
+                self.__syncrepl_cursor.execute('''
                     SELECT dn
                       FROM syncrepl_records
                 ''')
-                for row in self.__snycrepl_cursor.fetchall():
+                for row in self.__syncrepl_cursor.fetchall():
                     rowlist.append(row[0])
                 self.__syncrepl_list = rowlist
                 self.__syncrepl_count = len(rowlist)
@@ -781,8 +781,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
                 # Check for the DN in the DB.
                 # Cache the result for later use.
-                self.__snycrepl_cursor.execute('''
-                    SELECT attrlist
+                self.__syncrepl_cursor.execute('''
+                    SELECT attributes
                       FROM syncrepl_records
                      WHERE dn = ?
                 ''', (dn,))
@@ -827,7 +827,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         # Get a cursor, then do the callback to the client.
         c = self.__db.cursor()
-        self.callback.refresh_done(c, ItemList(c))
+        self.callback.refresh_done(ItemList(c), c)
 
         # Update our internal tracking variable, delete the present UUID list,
         # and (finally!) commit.  We also trigger an optimize run.
@@ -878,7 +878,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             # possible we are replaying an operation.
             if dn is None:
                 raise exceptions.DBConsistencyWarning(
-                    'Attempted to delete UUID %d from the database, but it'
+                    'Attempted to delete UUID %d from the database, but it '
                     'does not exist!' % (uuid,)
                 )
                 return
@@ -1133,7 +1133,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                     # We have an old record in the way.  Act like we got an
                     # "item deleted" message from the LDAP server.
                     old_uuid = possible_db_record[0]
-                    syncrepl_delete(old_uuid)
+                    self.syncrepl_delete(old_uuid)
 
                 # Now we can update the DB with the new DN, and do the callback.
                 c.execute('''
@@ -1175,4 +1175,4 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                        (uuid, dn, attributes)
                 VALUES (?, ?, ?)
             ''', (uuid, dn, attrs))
-            self.callback.record_add(db, attrs, c)
+            self.callback.record_add(dn, attrs, c)
