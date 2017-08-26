@@ -254,7 +254,26 @@ class DBInterface(object):
 
             Do not use the returned cursor outside of this thread!
         """
-        return self._db.cursor()
+        return self.__db.cursor()
+
+
+    def execute(self, statement, params=None):
+        """Execute a statement, and return the cursor.
+
+        :param str statement: A SQL statement to execute.
+
+        :param tuple params: Optional parameters.
+
+        :returns: A sqlite3.cursor instance.
+
+        .. warning::
+
+            Do not use the returned cursor outside of this thread!
+        """
+        if params is not None:
+            return self.__db.execute(statement, params)
+        else:
+            return self.__db.execute(statement)
 
     
     def commit(self):
