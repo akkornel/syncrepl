@@ -1126,7 +1126,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 # inconsistency.  So, check for the new DN.
                 c.execute('''
                     SELECT uuid
-                      FROM syncrepl_attributes
+                      FROM syncrepl_records
                      WHERE dn = ?
                 ''', (dn,))
                 possible_db_record = c.fetchone()
@@ -1138,7 +1138,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
                 # Now we can update the DB with the new DN, and do the callback.
                 c.execute('''
-                    UPDATE syncrepl_attributes
+                    UPDATE syncrepl_records
                        SET dn = ?
                      WHERE uuid = ?
                 ''', (dn, uuid))
@@ -1146,7 +1146,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
             # Now we've checked the DN, update the DB and do the callback.
             c.execute('''
-                UPDATE syncrepl_attributes
+                UPDATE syncrepl_records
                    SET attributes = ?
                  WHERE uuid = ?
             ''', (attrs, uuid))
@@ -1159,7 +1159,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             # the database.
             c.execute('''
                 SELECT uuid
-                  FROM syncrepl_attributes
+                  FROM syncrepl_records
                  WHERE dn = ?
             ''', (dn,))
             possible_db_record = c.fetchone()
@@ -1172,7 +1172,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             # Now we can insert the record and do the add callback.
             c.execute('''
                 INSERT
-                  INTO syncrepl_attributes
+                  INTO syncrepl_records
                        (uuid, dn, attributes)
                 VALUES (?, ?, ?)
             ''', (uuid, dn, attrs))
