@@ -290,11 +290,15 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         self.__db = db.DBInterface(data_path)
 
         # If the versions are missing, then set them now.
-        if (    (db.get_setting('syncrepl_version') is None)
-            and (db.get_setting('syncrepl_pyversion') is None)
+        if (    (self.__db.get_setting('syncrepl_version') is None)
+            and (self.__db.get_setting('syncrepl_pyversion') is None)
         ):
-            db.set_setting('syncrepl_version', _version.__version_tuple__)
-            db.set_setting('syncrepl_pyversion', tuple(version_info))
+            self.__db.set_setting('syncrepl_version',
+                _version.__version_tuple__
+            )
+            self.__db.set_setting('syncrepl_pyversion',
+                tuple(version_info)
+            )
 
         # Make a small function to compare version tuples.
         def compare_versions(a, b):
@@ -319,8 +323,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             return 0
 
         # Check our pyversion, and throw if we're too new.
-        db_pyversion = db.get_setting('syncrepl_pyversion')
-        db_version = db.get_setting('syncrepl_version')
+        db_pyversion = self.__db.get_setting('syncrepl_pyversion')
+        db_version = self.__db.get_setting('syncrepl_version')
         if compare_versions(db_pyversion, tuple(version_info)) == 1:
             raise exceptions.VersionError(
                 which='python',
@@ -344,7 +348,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         # If no ldap_url was provided, pull from state.
         # Grab the DB-stored URL.  If none was found, throw.
-        db_url = db.get_setting('syncrepl_url')
+        db_url = self.__db.get_setting('syncrepl_url')
         if db_url is None:
             raise exceptions.LDAPUrlError
         db_url = ldapurl.LDAPUrl(db_url)
@@ -369,7 +373,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             # example, due to differing ACLs between accounts).
 
             # Since we haven't thrown, allow the new URL.
-            db.set_setting('syncrepl_url', str(new_url))
+            self.__db.set_setting('syncrepl_url', str(new_url))
 
         # Finally, we can set up our LDAP client!
         SimpleLDAPObject.__init__(self, ldap_url.initializeUrl(), **kwargs)
