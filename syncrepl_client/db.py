@@ -170,6 +170,8 @@ class DBInterface(object):
 
         :returns: A sqlite3 instance.
 
+        :raises: sqlite3.OperationalError
+
         Create a new instance.  This opens the SQLite database, creating a new
         one if needed.  Once open, the schema is checked.  If necessary, it is
         upgraded or created.
@@ -184,6 +186,7 @@ class DBInterface(object):
 
         # Open our database file
         self.__data_path = data_path
+        self.__db = None
         self.__db = sqlite3.connect(data_path,
             detect_types = sqlite3.PARSE_DECLTYPES
         )
@@ -229,6 +232,7 @@ class DBInterface(object):
         # register our custom types.  That's it!
         newbie = DBInterface.__new__(DBInterface)
         newbie.__data_path = data_path
+        newbie.__db = None
         newbie.__db = sqlite3.connect(self.__data_path,
             detect_types = sqlite3.PARSE_DECLTYPES
         )
@@ -241,7 +245,9 @@ class DBInterface(object):
 
     def __del__(self):
         # Do a local optimize before disconnecting.
-        self.__db.execute('PRAGMA optimize')
+        if self.__db is not None:
+            self.__db.execute('PRAGMA optimize')
+            self.__db.close()
 
 
     def cursor(self):
