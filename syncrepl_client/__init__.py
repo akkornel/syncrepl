@@ -34,6 +34,14 @@ try:
 except ImportError:
     import dummy_threading as threading
 
+# From Python 3.3+, Mapping is in collections.abc.
+# In Python 2, and Python ≤ 3.2, Mapping is in collections.
+if ((version_info[0] == 3) and (version_info[1] >= 3)):
+    from collections.abc import Iterator, Mapping
+else:
+    from collections import Iterator, Mapping
+
+# Bring in some stuff from this package.
 from . import db
 from . import exceptions
 from . import _version
@@ -718,32 +726,96 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         # Let's make a class to represent our LDAP items!
         # We implement the methods needed for a Dictionary.
         # The keys are DNs; the values are attribute dicts.
-        class ItemList(object):
-            def __init__(self, dn_uuid_map, uuid_attrs_map):
-                self.__dn_uuid_map = dn_uuid_map
-                self.__uuid_attrs_map = uuid_attrs_map
-            def __len__(self):
-                return len(self.__dn_uuid_map)
-            def __contains__(self, dn):
-                return [True if dn in self.__dn__uuid_map else False]
-            def __iter__(self):
-                return iter(self.__dn_uuid_map)
-            # __next__() and next() provided by the shelve iterator
+        class ItemList(Mapping):
+            # The only thing we need is a database cursor.
+            def __init__(self, cursor):
+                # Let the superclass set itself up.
+                super(ItemList, self).__init__()
+
+                # Store our cursor
+                self.__syncrepl_cursor = cursor
+
+                # Define attributes for our list of DNs, and the number of DNs.
+                # These are lazily-populated by checking __syncrepl_count.
+                self.__syncrepl_count = None
+                self.__syncrepl_list = None
+
+                # We also make a place to cache entries we've pulled.
+                self.__syncrepl_attrlist = dict()
+
+            def __del__(self):
+                self.__syncrepl_cursor.close()
+                super(ItemList, self).__del__()
+
+            def __syncrepl_populate(self):
+                rowlist = list()
+                self.__snycrepl_cursor.execute('''
+                    SELECT dn
+                      FROM syncrepl_records
+                ''')
+                for row in self.__snycrepl_cursor.fetchall():
+                    rowlist.append(row[0])
+                self.__syncrepl_list = rowlist
+                self.__syncrepl_count = len(rowlist)
+
             def __getitem__(self, dn):
-                uuid = self.__dn_uuid_map[dn]
-                return self.__uuid_attrs_map[uuid]
-            def __setitem__(self, dn):
-                raise AttributeError('Syncrepl is read-only')
-            def __delitem__(self, dn):
-                raise AttributeError('Syncrepl is read-only')
+                # Populate, and check cache.
+                if self.__syncrepl_count is None:
+                    self.__syncrepl_populate()
+                elif dn in self.__syncrepl_attrlist:
+                    return self.__syncrepl_attrlist[dn]
+
+                # Check for the DN in the DB.
+                # Cache the result for later use.
+                self.__snycrepl_cursor.execute('''
+                    SELECT attrlist
+                      FROM syncrepl_records
+                     WHERE dn = ?
+                ''', (dn,))
+                row = self.__syncrepl_cursor.fetchone()
+                if row is not None:
+                    self.__syncrepl_attrlist[dn] = row[0]
+                    return row[0]
+                else
+                    self.__syncrepl_attrlist[dn] = None
+                    return None
+
+            def __iter__(self):
+                # Populate the DNs first.
+                if self.__syncrepl_count is None:
+                    self.__syncrepl_populate()
+
+                # This is a bit weird.
+                # To save the lines needed to make an iterator class, we're
+                # just making an Iterator instance, and setting instance
+                # properties.
+                # Doing this also lets us do a closure function to our cache.
+                # NOTE: The only reason we just need a local index, is because
+                # this object is read-only.
+                iterator = Iterator()
+                iterator.i = 0
+                def iterator.next(iterself):
+                    # Remember, i is zero-indexed
+                    if iterself.i >= self.__len__():
+                        raise StopIteration
+                    dn = self.__syncrepl_list[iterself.i]
+                    attrlist = self.__getitem__(dn)
+                    iterself.i += 1
+                    return attrlist
+
+                return iterator
+
+            def __len__(self):
+                # Populate, and then return length.
+                if self.__syncrepl_count is None:
+                    self.__syncrepl_populate()
+                return self.__syncrepl_count
 
         # Besides doing a callback, we update an internal tracking variable,
         # and we delete our list of present items (that's only used in the
         # Refresh mode).
-
         self.callback.refresh_done(ItemList(
-            self.__dn_uuid_map,
-            self.__uuid_attrs
+            self.__db.cursor()
         ))
         self.__in_refresh = False
         del self.__present_uuids
