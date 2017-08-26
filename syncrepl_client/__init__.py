@@ -385,6 +385,11 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             print('Doing simple bind...')
             self.simple_bind_s(who=ldap_url.who, cred=ldap_url.cred)
 
+        # Commit any settings changes, then do a vacuum.
+        self.__db.commit()
+        self.__db.execute('PRAGMA optimize')
+        self.__db.execute('VACUUM')
+
         # Callback to mark a successful bind.
         self.callback.bind_complete(self, self.__db.cursor())
         self.__ldap_setup_complete = True
@@ -401,7 +406,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             attrlist=ldap_url.attrs
         )
 
-        # All done!  Commit any changed settings, and return.
+        # All done!  Commit any client-changed stuff, and return.
         self.__db.commit()
         return None
 
@@ -817,9 +822,10 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         self.callback.refresh_done(c, ItemList(c))
 
         # Update our internal tracking variable, delete the present UUID list,
-        # and (finally!) commit.
+        # and (finally!) commit.  We also trigger an optimize run.
         self.__in_refresh = False
         self.__db.commit()
+        self.__db.execute('PRAGMA optimize')
         del self.__present_uuids
 
 
