@@ -401,7 +401,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             attrlist=ldap_url.attrs
         )
 
-        # All done!
+        # All done!  Commit any changed settings, and return.
+        self.__db.commit()
         return None
 
 
