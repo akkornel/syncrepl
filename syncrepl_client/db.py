@@ -97,19 +97,21 @@ class DBInterface(object):
 
     .. note::
 
-        Please do not `VACUUM`.  A vacuum is automatically run the first time a
-        database is opened, and the optimize pragma is automatically called
-        right before each instance is deleted.  The same is also done at the
-        end of the refresh phase.
+        Please do not optimize or vacuum on your own, as those operations are
+        already being performed:
+        
+        * A vacuum takes place after the refresh_done callback completes.
+
+        * An optimize is run after the refresh_done callback completes, before
+          the vacuum is run.
+
+        * An optimize is also run during instance initialization, and when
+          unbinding.
 
     Failure to observe the notes and warnings above may cause data corruption.
     If you are unable to observe the notes and warnings above, please use your
     own database.
     """
-
-
-    # Track if a vacuum has been run yet on a file.
-    vacuum_run = dict()
 
 
     def __init__(self, data_path):
@@ -143,11 +145,6 @@ class DBInterface(object):
         # Check (and, if necessary, upgrade) our schema.
         self._check_and_upgrade_schema()
 
-        # If this is the first time we've opened the file, do a vacuum.
-        if data_path not in self.vacuum_run:
-            self.__db.execute('VACUUM')
-            self.vacuum_run[data_path] = True
-
         # We are ready to go!
         return None
 
@@ -180,13 +177,6 @@ class DBInterface(object):
             detect_types = sqlite3.PARSE_DECLTYPES
         )
         return newbie
-
-
-    def __del__(self):
-        # Do a local optimize before disconnecting.
-        if self.__db is not None:
-            self.__db.execute('PRAGMA optimize')
-            self.__db.close()
 
 
     def cursor(self):
@@ -234,8 +224,30 @@ class DBInterface(object):
 
     def interrupt(self):
         """Interrupt all in-flight SQL queries.
+
+        This is good to run when you are in a new thread, before deleting the
+        old thread's instance.
         """
         self.__db.interrupt()
+
+
+    def optimize(self):
+        """Runs the `optimize` pragma.
+
+        SQLite suggests running this when closing a datbase connection, and
+        also after every few hours of continuous operation.
+        """
+        self.execute('PRAGMA optimize')
+
+
+    def vacuum(self):
+        """Run a vacuum.
+
+        .. note::
+
+            This method is already called at the end of the refresh phase.
+        """
+        self.execute('VACUUM')
 
     
     def _check_and_upgrade_schema(self):

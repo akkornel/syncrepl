@@ -405,9 +405,9 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             print('Doing simple bind...')
             self.simple_bind_s(who=ldap_url.who, cred=ldap_url.cred)
 
-        # Commit any settings changes, then do a vacuum.
+        # Commit any settings changes, then do an optimize.
         self.__db.commit()
-        self.__db.execute('PRAGMA optimize')
+        self.__db.optimize()
 
         # Callback to mark a successful bind.
         self.callback.bind_complete(self, self.__db.cursor())
@@ -479,6 +479,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         # We can't be totally sure that all external stuff is good, so first
         # we make sure that something exists before we close/unbind it.
         if self.__db is not None:
+            # Do an optimize run when closing.
+            self.__db.optimize()
             del(self.__db)
         if self.__ldap_setup_complete is True:
             unbind_result = SimpleLDAPObject.unbind(self)
@@ -518,12 +520,46 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         Returns an instance of :class:`~syncrepl_client.db.DBInterface`, which
         you can use.
 
+        .. note::
+
+            The instance returned will be bound to the local thread.  
+
         .. warning::
 
             Please read, understand, and observe all of the notes and warnings
             in the :class:`~syncrepl_client.db.DBInterface` class!
         """
         return self.__db.clone()
+
+
+    def db_reconnect(self):
+        """Close and reopen the database connection.
+
+        :returns: None.
+
+        This method closes and reopens the database connection.  It is meant to
+        be called if this instance is transferred a new thread, because the
+        database connection is not thread-safe.
+
+        .. note::
+
+            Calling this method does not affect database connection instances
+            returned from the :meth:`~syncrepl_client.Syncrepl.db` method.
+            However, the warning about thread-safety still applies: Instances
+            returned by :meth:`~syncrepl_client.Syncrepl.db` are *not*
+            thread-safe.
+
+        .. warning::
+
+            All uncommitted transactions will be rolled back when this method
+            runs, and all cursors (such as those obtained from callbacks) will
+            become invalid (although you shouldn't be using them outside of a
+            callback, so it should not matter).
+        """
+        new_db = self.__db.clone()
+        self.__db.interrupt()
+        del(self.__db)
+        self.__db = new_db
 
 
     def please_stop(self):
@@ -670,6 +706,11 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             You *really* should run refresh-and-persist Syncrepl searches in a
             thread.
 
+        Before starting to call :meth:`~syncrepl_client.Syncrepl.poll`, this
+        method will call :meth:`~syncrepl_client.Syncrepl.db_reconnect` to open
+        a database connection that is tied to this thread (although it is _not_
+        thread-local).
+
         When you are running this method in a thread, use
         :meth:`~syncrepl_client.Syncrepl.please_stop` to request the safe
         shutdown of the Syncrepl search.  Once the thread has been
@@ -684,8 +725,16 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             :meth:`~syncrepl_client.Syncrepl.please_stop`) may be called until
             the thread has been :meth:`~threading.Thread.join`-ed.
         """
+        # First, reconnect the database
+        self.db_reconnect()
+
+        # Next, start our loop.  We set poll_result to True in order to enter
+        # the loop, but once inside, we have to set poll_result to False before
+        # calling poll().  That way, if an exception is thrown inside poll(),
+        # poll_result will stay False, and we'll be able to get out.
         poll_result = True
         while poll_result:
+            poll_result = False
             poll_result = self.poll()
 
 
@@ -844,10 +893,11 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         self.callback.refresh_done(ItemList(c), c)
 
         # Update our internal tracking variable, delete the present UUID list,
-        # and (finally!) commit.  We also trigger an optimize run.
+        # and (finally!) commit.  We also trigger an optimize and vacuum run.
         self.__in_refresh = False
         self.__db.commit()
-        self.__db.execute('PRAGMA optimize')
+        self.__db.optimize()
+        self.__db.vacuum()
         del self.__present_uuids
 
 
