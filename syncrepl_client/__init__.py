@@ -791,8 +791,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                     self.__syncrepl_attrlist[dn] = row[0]
                     return row[0]
                 else:
-                    self.__syncrepl_attrlist[dn] = None
-                    return None
+                    raise KeyError(dn)
 
             def __iter__(self):
                 # Populate the DNs first.
