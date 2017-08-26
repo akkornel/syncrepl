@@ -811,13 +811,14 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                     self.__syncrepl_populate()
                 return self.__syncrepl_count
 
-        # Besides doing a callback, we update an internal tracking variable,
-        # and we delete our list of present items (that's only used in the
-        # Refresh mode).
-        self.callback.refresh_done(ItemList(
-            self.__db.cursor()
-        ))
+        # Get a cursor, then do the callback to the client.
+        c = self.__db.cursor()
+        self.callback.refresh_done(c, ItemList(c))
+
+        # Update our internal tracking variable, delete the present UUID list,
+        # and (finally!) commit.
         self.__in_refresh = False
+        self.__db.commit()
         del self.__present_uuids
 
 
@@ -878,7 +879,9 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             self.callback.record_delete(dn[0], c)
 
         # Now that the deletes & callbacks are done, commit and close cursor.
-        self.__db.commit()
+        # (Only commit if we are not in the refresh phase.)
+        if self.__in_refresh is False:
+            self.__db.commit()
         c.close()
 
 

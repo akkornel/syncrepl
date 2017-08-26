@@ -112,6 +112,8 @@ class BaseCallback(object):
 
         :param dict items: The items currently in the directory.
 
+        :param sqlite3.Cursor cursor: A mid-transaction database cursor.
+
         :return: None -- any returned value is ignored.
 
         When receiving this callback, you know that the refresh phase has 
@@ -135,12 +137,34 @@ class BaseCallback(object):
             inside this callback*.  Once this callback returns, any attempts to
             access :data:`items` again will result in undefined behavior.
 
+        `cursor` provides access to the underlying database, as described in
+        :class:`~syncrepl_client.DBInterface`.  If you are storing your own
+        data in syncrepl_client's database, you can use this cursor to make
+        appropriate changes to *your own* tables.  That will ensure your
+        database changes are saved at the same time as ours!
+
+        .. warning::
+
+            Do not commit the in-progress transaction!  The commit will take
+            place automatically, once your callback returns.
+
         If you need to do any sort of synchronization with anyone else, this is
         the best time to do it.  Once you return from this callback, the
-        persist phase will begin.  If you are operating in refresh-only mode,
-        then as soon as this callback completes,
-        :meth:`syncrepl_client.Syncrepl.poll` will return :obj:`False`.  It is
-        then safe to call :meth:`~syncrepl_client.Syncrepl.unbind`.
+        persist phase will begin.  The first database commit will also take
+        place.
+
+        .. note::
+
+            Once you return from this callback, it may be some time before you
+            see anything happen (either another callback, or
+            :meth:`syncrepl_client.Syncrepl.poll` returning.  That is because
+            the first database commit is taking place, and there may be _many_
+            changes to commit!
+
+        If you are operating in refresh-only mode, then as soon as this
+        callback completes, :meth:`syncrepl_client.Syncrepl.poll` will return
+        :obj:`False`.  It is then safe to call
+        :meth:`~syncrepl_client.Syncrepl.unbind`.
         """
         pass
 
