@@ -84,7 +84,7 @@ if args.persist is True:
 
 if args.nodir is True:
     @classmethod
-    def quiet_refresh_done(cls, items):
+    def quiet_refresh_done(cls, items, cursor):
         print('REFRESH COMPLETE!', file=cls.dest)
         print('(Directory dump suppressed)', file=cls.dest)
 
