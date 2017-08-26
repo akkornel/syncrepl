@@ -777,7 +777,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 if row is not None:
                     self.__syncrepl_attrlist[dn] = row[0]
                     return row[0]
-                else
+                else:
                     self.__syncrepl_attrlist[dn] = None
                     return None
 
@@ -795,7 +795,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 # this object is read-only.
                 iterator = Iterator()
                 iterator.i = 0
-                def iterator.next(iterself):
+                def iterator_next(iterself):
                     # Remember, i is zero-indexed
                     if iterself.i >= self.__len__():
                         raise StopIteration
@@ -803,7 +803,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                     attrlist = self.__getitem__(dn)
                     iterself.i += 1
                     return attrlist
-
+                iterator.next = iterator_next
                 return iterator
 
             def __len__(self):

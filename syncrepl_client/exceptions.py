@@ -40,8 +40,8 @@ class VersionError(Exception):
         self.component = which
 
     def __str__(self):
-        return '%s is version %s, but we are %s'
-               % (self.component, self.their_version, self.our_version)
+        return (  '%s is version %s, but we are %s'
+                % (self.component, self.their_version, self.our_version))
 
 
 class ClosedError(Exception):
