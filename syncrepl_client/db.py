@@ -23,6 +23,9 @@ import pickle
 import sqlite3
 import uuid
 
+from . import exceptions
+
+
 # We use threading for a lock
 try:
     import threading
@@ -292,28 +295,41 @@ class DBInterface(object):
         # Grab the list of tables, and make sure our version-number-containing
         # table is present.
         if 'syncrepl_schema' is not in discovered_tables:
-            raise OSError
+            raise exceptions.DBSchemaError('No schema table found')
 
         # Grab the schema version number from the table
         c.execute('SELECT version FROM syncrepl_schema')
         schema_version = c.fetchall()
         if len(schema_version) != 1:
-            raise OSError
+            raise exceptions.DBSchemaError('Too many version entries')
         schema_version = schema_version[0][0]
 
         # Error out if the DB schema is too new.
         # Check our schema is valid for the specified version.
         # Then, if not the latest, upgrade!
         if schema_version > CURRENT_SCHEMA_VERSION:
-            raise OSError
+            raise exceptions.SchemaVersionError()
         self._validate_schema(schema_version)
         if schema_version < CURRENT_SCHEMA_VERSION:
             self._upgrade_schema(schema_version)
 
-        # Woooo, schema check complete!
+        # Woooo, schema check/upgrade complete!
 
 
     def _validate_schema(self, version):
+        # If the schema version is higher than we know, error out.
+        if version > CURRENT_SCHEMA_VERSION:
+            raise exceptions.SchemaVersionError('Schema too new')
+
+        # Schema version zero should not be coming to us.
+        if version == 0:
+            raise exceptions.DBSchemaError('Schema version zero is implicit.')
+
+        # Now we can validate the schema against the stated version.
+
+        elsif version == 1:
+            pass
+
 
 
     def _upgrade_schema(self, old_version):
@@ -348,4 +364,8 @@ class DBInterface(object):
             # Hand us off to upgrade us from version 1 to whatever we're at now.
             return self._upgrade_schema(1)
 
+        # The next upgrade would be here.
 
+        # Finally, catch cases where the schema is too new.
+        if old_version > CURRENT_SCHEMA_VERSION:
+            raise exceptions.SchemaVersionError('Schema too new')

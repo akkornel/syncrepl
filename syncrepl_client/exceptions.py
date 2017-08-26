@@ -82,3 +82,15 @@ class LDAPUrlParseError(LDAPUrlError):
 
     def __init__(self, url):
         self.url = url
+
+
+class DBError(Exception):
+    pass
+
+
+class DBSchemaError(DBError):
+    pass
+
+
+class SchemaVersionError(DBError):
+    pass
