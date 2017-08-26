@@ -113,12 +113,17 @@ class DBError(Exception):
     pass
 
 
+class DBConsistencyWarning(Warning):
+    pass
+
+
 class DBSchemaError(DBError):
     pass
 
 
 class SchemaVersionError(DBError):
     pass
+
 
 class DBSettingError(DBError):
     pass
