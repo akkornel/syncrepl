@@ -374,3 +374,72 @@ class DBInterface(object):
         # Finally, catch cases where the schema is too new.
         elif old_version > CURRENT_SCHEMA_VERSION:
             raise exceptions.SchemaVersionError('Schema too new')
+
+
+    def get_setting(self, setting):
+        """Get a setting from the syncrepl_settings table
+
+        :param str setting: The name of a setting to fetch.
+
+        :returns: An object, or None if the object is not stored.
+
+        Returns a setting from the `syncrepl_settings` table, converted back
+        into the object it previously was.
+        """
+        c = self.__db.execute('''
+            SELECT value
+              FROM syncrepl_settings
+             WHERE name = ?
+        ''', (setting,)
+        )
+
+        # We either get one result, or none, since we searched on the key.
+        r = c.fetchone()
+        if r is None:
+            return None
+        else:
+            return r[0]
+
+
+    def set_setting(self, setting, value):
+        """Store a setting into the syncrepl_settings table.
+
+        :param str setting: The name of the setting to store.
+
+        :param object value: The object to store.
+
+        :returns: None
+
+        :throws:syncrepl_client.exceptions.DBSettingError
+
+        This can be used to store a string, bytes, simple object, etc..
+        Basically, anything that is a subclass of :class:`object`.
+
+        .. note::
+        
+            Be careful storing integers, since they might not be a subclass at
+            the time you try to store the setting.
+
+        .. warning::
+
+            Setting names starting with "syncrepl" are reserved.
+        """
+        if not isinstance(setting, str):
+            raise exceptions.DBSettingError(
+                'Setting name is not a string.' % (setting,)
+            )
+        if not isinstance(value, object):
+            raise exceptions.DBSettingError(
+                'Value for setting "%s" is not an object.' % (setting,)
+            )
+
+        c = self.__db.execute('''
+            INSERT OR REPLACE
+                         INTO syncrepl_settings
+                              (name, value)
+                       VALUES (?, ?)
+        ''', (setting, value)
+        )
+
+        # If the save goes OK, commit!
+        c.commit()

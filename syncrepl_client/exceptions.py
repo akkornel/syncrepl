@@ -94,3 +94,6 @@ class DBSchemaError(DBError):
 
 class SchemaVersionError(DBError):
     pass
+
+class DBSettingError(DBError):
+    pass
