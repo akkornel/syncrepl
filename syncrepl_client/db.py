@@ -363,26 +363,26 @@ class DBInterface(object):
 
         # Start by upgrading us from version 0 to version 1.
         elif old_version == 0:
-            c = self.__db.execute('''
+            self.__db.executescript('''
                 CREATE TABLE syncrepl_schema (
                     version    UNSIGNED INT PRIMARY KEY
-                )
-            ''')
-            c.execute('''
+                );
+
                 CREATE TABLE syncrepl_records (
                     uuid       UUID         PRIMARY KEY,
                     dn         TEXT         UNIQUE,
                     attributes OBJECT
-                )
-            ''')
-            c.execute('''
+                );
+
                 CREATE TABLE syncrepl_settings (
                     name       TEXT         PRIMARY KEY,
                     value      OBJECT
-                )                
+                );
+
+                INSERT INTO syncrepl_schema (version) VALUES (1);
             ''')
-            c.execute('INSERT INTO syncrepl_schema (version) VALUES (1)')
-            c.commit()
+            self.__db.commit()
+            c.close()
             
             # Hand us off to upgrade us from version 1 to whatever we're at now.
             return self._upgrade_schema(1)
