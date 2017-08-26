@@ -746,7 +746,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             # The only thing we need is a database cursor.
             def __init__(self, cursor):
                 # Let the superclass set itself up.
-                super(ItemList, self).__init__()
+                Mapping.__init__(self)
 
                 # Store our cursor
                 self.__syncrepl_cursor = cursor
