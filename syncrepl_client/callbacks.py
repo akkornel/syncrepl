@@ -437,12 +437,12 @@ class LoggingCallback(BaseCallback):
     """
 
     @classmethod
-    def bind_complete(cls, ldap):
+    def bind_complete(cls, ldap, cursor):
         print('BIND COMPLETE!', file=cls.dest)
         print("\tWE ARE:", ldap.whoami_s(), file=cls.dest)
 
     @classmethod
-    def refresh_done(cls, items):
+    def refresh_done(cls, items, cursor):
         print('REFRESH COMPLETE!', file=cls.dest)
         print('BEGIN DIRECTORY CONTENTS:', file=cls.dest)
         for item in items:
@@ -455,7 +455,7 @@ class LoggingCallback(BaseCallback):
         print('END DIRECTORY CONTENTS', file=cls.dest)
 
     @classmethod
-    def record_add(cls, dn, attrs):
+    def record_add(cls, dn, attrs, cursor):
         print('NEW RECORD:', dn, file=cls.dest)
         for attr in attrs.keys():
             print("\t", attr, sep='', file=cls.dest)
@@ -467,13 +467,13 @@ class LoggingCallback(BaseCallback):
         print('DELETED RECORD:', dn, file=cls.dest)
 
     @classmethod
-    def record_rename(cls, old_dn, new_dn):
+    def record_rename(cls, old_dn, new_dn, cursor):
         print('RENAMED RECORD:', file=cls.dest)
         print("\tOld:", old_dn, file=cls.dest)
         print("\tNew:", new_dn, file=cls.dest)
 
     @classmethod
-    def record_change(cls, dn, old_attrs, new_attrs):
+    def record_change(cls, dn, old_attrs, new_attrs, cursor):
         print('RECORD CHANGED:', dn, file=cls.dest)
         for attr in new_attrs.keys():
             print("\t", attr, sep='', file=cls.dest)
