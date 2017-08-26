@@ -231,6 +231,12 @@ class DBInterface(object):
         """
         self.__db.rollback()
 
+
+    def interrupt(self):
+        """Interrupt all in-flight SQL queries.
+        """
+        self.__db.interrupt()
+
     
     def _check_and_upgrade_schema(self):
         """Check (and, if needed, upgrade) a database's schema.
