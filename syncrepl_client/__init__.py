@@ -581,21 +581,15 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             if please_stop_value is False:
                 raise ldap.CANCELLED
             else:
-                # Before returning, do a forced sync
-                self.sync(force=True)
                 return False
 
         # All other exceptions are real, and aren't caught.
 
         # If poll_output was False, then we're done, but done with what?
         # If we're in refresh-only mode, call syncrepl_refreshdone()
-        # (That will also sync for us.)
-        # If we're in refresh-and-persist mode, then just sync.
         if poll_output is False:
             if self.__in_refresh is True:
                 self.syncrepl_refreshdone()
-            else:
-                self.sync(force=True)
             return poll_output
 
         # Check if we have been asked to stop.  If we have, send a cancellation.
@@ -662,42 +656,6 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             poll_result = self.poll()
 
 
-    def sync(self, force=False):
-        """Sync the data store to storage.
-
-        :param bool force: Force sync even in refresh mode.
-
-        :returns: None
-
-        .. note::
-
-            This is an internal Syncrepl operation.  It is documented here for
-            educational purposes, but should **not** be called by clients.
-
-        For performance, the data store is kept in memory, and is only synced
-        to disk in certain cases.  Those cases are:
-
-        * When an instance is unbound.
-
-        * When a change happens in the persist phase of refresh-and-persist
-          mode.
-
-        In refresh mode, the data store is not synced to disk until the refresh
-        is complete.  This is done because consistency is not guaranteed in the
-        middle of a refresh phase.
-
-        You normally never need to call this yourself; it is called for you,
-        typically as soon as your callback completes.
-        """
-        if ((force is True) or
-            (self.__in_refresh is False)
-        ):
-            self.__data.sync()
-            self.__uuid_dn_map.sync()
-            self.__dn_uuid_map.sync()
-            self.__uuid_attrs.sync()
-
-
     def syncrepl_get_cookie(self):
         """Get Syncrepl cookie from data store.
 
@@ -741,7 +699,6 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         """
         self.callback.cookie_change(cookie)
         self.__data['cookie'] = cookie
-        self.sync()
 
 
     def syncrepl_refreshdone(self):
@@ -793,7 +750,6 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         ))
         self.__in_refresh = False
         del self.__present_uuids
-        self.sync()
 
 
     def syncrepl_delete(self, uuids):
@@ -825,7 +781,6 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             del self.__dn_uuid_map[self.__uuid_dn_map[uuid]]
             del self.__uuid_dn_map[uuid]
             del self.__uuid_attrs[uuid]
-            self.sync()
 
 
     def syncrepl_present(self, uuids, refreshDeletes=False):
@@ -1064,6 +1019,3 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             self.__dn_uuid_map[dn] = uuid
             self.__uuid_attrs[uuid] = attrs
             self.callback.record_add(dn, attrs)
-
-        # Sync changes
-        self.sync()
