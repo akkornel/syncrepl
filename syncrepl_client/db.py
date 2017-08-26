@@ -174,8 +174,8 @@ class DBInterface(object):
         # We make an empty instance, set attributes, open the database, and
         # register our custom types.  That's it!
         newbie = DBInterface.__new__(DBInterface)
-        newbie.__data_path = data_path
         newbie.__db = None
+        newbie.__data_path = data_path
         newbie.__db = sqlite3.connect(self.__data_path,
             detect_types = sqlite3.PARSE_DECLTYPES
         )
