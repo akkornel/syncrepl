@@ -33,30 +33,6 @@ except ImportError:
     import dummy_threading as threading
 
 
-# We want to store a UUID directly into the database.
-# To do that, define two conversion functions.
-
-def uuid_to_bytes(uuid):
-    """Convert a UUID to a string of bytes, for database storage.
-
-    :param UUID uuid: The :class:`~uuid.UUID` instance.
-
-    :returns: A bytes object.
-    """
-    return uuid.bytes
-sqlite3.register_adapter(uuid.UUID, uuid_to_bytes)
-
-def bytes_to_uuid(uuid_bytes):
-    """Convert a string of bytes into a UUID.
-
-    :param bytes uuid_bytes: A string of bytes.
-
-    :returns: A UUID object.
-    """
-    return uuid.UUID(bytes=uuid_bytes)
-sqlite3.register_converter('UUID', bytes_to_uuid)
-
-
 # We want to store an object into the database.
 # Luckily, pickle is forward-compatible, so we're OK as long as the client
 # keeps track of the Python version used (so we don't go back).
@@ -392,8 +368,8 @@ class DBInterface(object):
                 );
 
                 CREATE TABLE syncrepl_records (
-                    uuid       UUID         PRIMARY KEY,
                     dn         TEXT         UNIQUE,
+                    uuid       TEXT         PRIMARY KEY,
                     attributes OBJECT
                 );
 
