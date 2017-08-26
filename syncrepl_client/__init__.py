@@ -346,15 +346,20 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             except:
                 raise exceptions.LDAPURLParseError(ldap_url)
 
-        # If no ldap_url was provided, pull from state.
-        # Grab the DB-stored URL.  If none was found, throw.
+        # Grab the DB-stored URL.  If found, parse.
         db_url = self.__db.get_setting('syncrepl_url')
+        if db_url is not None:
+            db_url = ldapurl.LDAPUrl(db_url)
+
+        # If we don't have a URL in the database, then store what we were given.
+        # If we don't have any URL at all, then throw.
         if db_url is None:
-            raise exceptions.LDAPUrlError
-        db_url = ldapurl.LDAPUrl(db_url)
+            if ldap_url is None:
+                raise exceptions.LDAPUrlError
+            self.__db.set_setting('syncrepl_url', str(ldap_url))
 
         # Check if someone's trying to change the existing LDAP URL.
-        if ldap_url != db_url:
+        if db_url is not None and ldap_url != db_url:
             # Temporary names, for clarity.
             current_url = db_url
             new_url = ldap_url
