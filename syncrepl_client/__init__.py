@@ -270,36 +270,11 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         # Check that we have a valid mode
         assert(isinstance(mode, SyncreplMode))
 
-        # Open our shelves
+        # Connect to (and, if necessary, initialize) our database.
         # We pre-set each variable, so we know what's been done if we have to
         # clean up after an exception.
-        self.__data = None
-        self.__uuid_dn_map = None
-        self.__dn_uuid_map = None
-        self.__uuid_attrs = None
-        try:
-            self.__data = shelve.open(data_path + 'data', writeback=True)
-            self.__uuid_dn_map = shelve.open(data_path + 'uuid_map', writeback=True)
-            self.__dn_uuid_map = shelve.open(data_path + 'dn_map', writeback=True)
-            self.__uuid_attrs = shelve.open(data_path + 'attrs', writeback=True)
-        except:
-            # It's likely a shelf had a problem opening, so recreate them all.
-            self.__data = shelve.open(data_path + 'data',
-                flag='n',
-                writeback=True
-            )
-            self.__uuid_dn_map = shelve.open(data_path + 'uuid_map',
-                flag='n',
-                writeback=True
-            )
-            self.__dn_uuid_map = shelve.open(data_path + 'dn_map',
-                flag='n',
-                writeback=True
-            )
-            self.__uuid_attrs = shelve.open(data_path + 'attrs',
-                flag='n',
-                writeback=True
-            )
+        self.__db = None
+        self.__db = db.DBInterface(data_path)
 
         # Check the Python version for a mismatch.
         # If the major or minor numbers differ, then prepare to wipe
@@ -489,14 +464,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         # We can't be totally sure that all external stuff is good, so first
         # we make sure that something exists before we close/unbind it.
-        if self.__uuid_dn_map is not None:
-            self.__uuid_dn_map.close()
-        if self.__dn_uuid_map is not None:
-            self.__dn_uuid_map.close()
-        if self.__uuid_attrs is not None:
-            self.__uuid_attrs.close()
-        if self.__data is not None:
-            self.__data.close()
+        if self.__db is not None:
+            self.__db.close()
         if self.__ldap_setup_complete is True:
             unbind_result = SimpleLDAPObject.unbind(self)
         else:
