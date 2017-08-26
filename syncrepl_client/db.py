@@ -423,6 +423,11 @@ class DBInterface(object):
         .. warning::
 
             Setting names starting with "syncrepl" are reserved.
+
+        .. warning::
+
+            This method does not commit!  You are responsible for committing at
+            the appropriate time.
         """
         if not isinstance(setting, str):
             raise exceptions.DBSettingError(
@@ -433,13 +438,10 @@ class DBInterface(object):
                 'Value for setting "%s" is not an object.' % (setting,)
             )
 
-        c = self.__db.execute('''
+        self.__db.execute('''
             INSERT OR REPLACE
                          INTO syncrepl_settings
                               (name, value)
                        VALUES (?, ?)
         ''', (setting, value)
         )
-
-        # If the save goes OK, commit!
-        c.commit()
