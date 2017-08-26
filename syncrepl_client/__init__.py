@@ -798,25 +798,26 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 if self.__syncrepl_count is None:
                     self.__syncrepl_populate()
 
-                # This is a bit weird.
-                # To save the lines needed to make an iterator class, we're
-                # just making an Iterator instance, and setting instance
-                # properties.
-                # Doing this also lets us do a closure function to our cache.
+                # Make a small iterator class.
                 # NOTE: The only reason we just need a local index, is because
                 # this object is read-only.
-                iterator = Iterator()
-                iterator.i = 0
-                def iterator_next(iterself):
-                    # Remember, i is zero-indexed
-                    if iterself.i >= self.__len__():
-                        raise StopIteration
-                    dn = self.__syncrepl_list[iterself.i]
-                    attrlist = self.__getitem__(dn)
-                    iterself.i += 1
-                    return attrlist
-                iterator.next = iterator_next
-                return iterator
+                class ItemIter(Iterator):
+                    def __init__(iterself, item_list, get_item):
+                        iterself.i = 0
+                        iterself.item_list = item_list
+                        iterself.get_item = get_item
+                    def __next__(iterself):
+                        # Remember, i is zero-indexed
+                        if iterself.i >= len(iterself.item_list):
+                            raise StopIteration
+                        dn = iterself.item_list[iterself.i]
+                        attrlist = iterself.get_item(dn)
+                        iterself.i += 1
+                        return attrlist
+
+                # Give the iterator to the client, along with a list ref, and a
+                # method ref.
+                return ItemIter(self.__syncrepl_list, self.__getitem__)
 
             def __len__(self):
                 # Populate, and then return length.
