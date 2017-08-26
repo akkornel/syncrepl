@@ -120,7 +120,7 @@ class BaseCallback(object):
         pass
 
     @classmethod
-    def refresh_done(cls, items):
+    def refresh_done(cls, items, cursor):
         """Called to mark the end of the refresh phase.
 
         :param dict items: The items currently in the directory.
