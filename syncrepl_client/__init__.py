@@ -460,7 +460,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         # We can't be totally sure that all external stuff is good, so first
         # we make sure that something exists before we close/unbind it.
         if self.__db is not None:
-            self.__db.close()
+            del(self.__db)
         if self.__ldap_setup_complete is True:
             unbind_result = SimpleLDAPObject.unbind(self)
         else:
