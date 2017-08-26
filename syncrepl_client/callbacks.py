@@ -63,10 +63,12 @@ class BaseCallback(object):
     """
 
     @classmethod
-    def bind_complete(cls, ldap):
+    def bind_complete(cls, ldap, cursor):
         """Called to mark a successful bind to the LDAP server.
 
         :param ldap.LDAPObject ldap: The LDAP object.
+
+        :param sqlite3.Cursor cursor: A mid-transaction database cursor.
 
         :return: None - any returned value is ignored.
 
@@ -103,6 +105,17 @@ class BaseCallback(object):
             the syncrepl search.  **No other operations will be allowed!**
             If you want to communicate with the LDAP server after this callback
             completes, you will need to set up a separate LDAP connection.
+
+        `cursor` provides access to the underlying database, as described in
+        :class:`~syncrepl_client.DBInterface`.  If you are storing your own
+        data in syncrepl_client's database, you can use this cursor to make
+        appropriate changes to *your own* tables.  That will ensure your
+        database changes are saved at the same time as ours!
+
+        .. warning::
+
+            Do not commit the in-progress transaction!  The commit will take
+            place automatically, once your callback returns.
         """
         pass
 

@@ -386,7 +386,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             self.simple_bind_s(who=ldap_url.who, cred=ldap_url.cred)
 
         # Callback to mark a successful bind.
-        self.callback.bind_complete(self)
+        self.callback.bind_complete(self, self.__db.cursor())
         self.__ldap_setup_complete = True
 
         # Before we start, we have to check if a filter was set.  If not, set the
