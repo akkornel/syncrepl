@@ -874,9 +874,11 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                  WHERE uuid = ?
             ''', (uuid,))
 
-            # Do our callback, and commit
+            # Do our callback.
             self.callback.record_delete(dn[0], c)
-            c.commit()
+
+        # Now that the deletes & callbacks are done, commit and close cursor.
+        self.__db.commit()
         c.close()
 
 
@@ -988,18 +990,27 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             # entry received.
 
         elif ((uuids is None) and (refreshDeletes is False)):
-            # We're almost at the end of the refresh.  Every entry that we have in
-            # state, but that didn't get a "present" message, has been deleted!
-            deleted_uuids = []
-            for uuid in self.__uuid_dn_map.keys():
-                if uuid in self.__present_uuids:
-                    next
-                else:
-                    deleted_uuids.append(uuid)
+            # We're almost at the end of the refresh.  Every entry that we have
+            # in state, but that didn't get a "present" message, has been
+            # deleted!
+
+            # Look through each UUID in the database.
+            c = self.__db.execute('''
+                SELECT uuid
+                  FROM syncrepl_records
+            ''')
+            for db_uuid in c.fetchall():
+                # If the DB has a UUID _not_ in the present list, note it.
+                if db_uuid[0] not in self.__present_uuids:
+                    deleted_uuids.append(db_uuid[0])
+
+            # Close this cursor, since we're done with it.
+            c.close()
 
             # We've built up a list of things to delete.
-            # If there's anything in the list, then call the code to delete stuff.
-            # `syncrepl_delete` will handle the callbacks.
+            # If there's anything in the list, then call the code to delete
+            # stuff.  `syncrepl_delete` will handle the callbacks, and the
+            # database transaction.
             if len(deleted_uuids) > 0:
                 self.syncrepl_delete(deleted_uuids)
 
