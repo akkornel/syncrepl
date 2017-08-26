@@ -27,6 +27,7 @@ import ldap
 from ldap.ldapobject import SimpleLDAPObject
 from ldap.syncrepl import SyncreplConsumer
 import ldapurl
+import pickle
 import signal
 import sqlite3
 from sys import argv, exit, version_info
@@ -295,10 +296,10 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             and (self.__db.get_setting('syncrepl_pyversion') is None)
         ):
             self.__db.set_setting('syncrepl_version',
-                _version.__version_tuple__
+                pickle.dumps(_version.__version_tuple__)
             )
             self.__db.set_setting('syncrepl_pyversion',
-                tuple(version_info)
+                pickle.dumps(tuple(version_info))
             )
 
         # Make a small function to compare version tuples.
@@ -324,8 +325,12 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             return 0
 
         # Check our pyversion, and throw if we're too new.
-        db_pyversion = self.__db.get_setting('syncrepl_pyversion')
-        db_version = self.__db.get_setting('syncrepl_version')
+        db_pyversion = pickle.loads(
+            self.__db.get_setting('syncrepl_pyversion')
+        )
+        db_version = pickle.loads(
+            self.__db.get_setting('syncrepl_version')
+        )
         if compare_versions(db_pyversion, tuple(version_info)) == 1:
             raise exceptions.VersionError(
                 which='python',
@@ -350,14 +355,16 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         # Grab the DB-stored URL.  If found, parse.
         db_url = self.__db.get_setting('syncrepl_url')
         if db_url is not None:
-            db_url = ldapurl.LDAPUrl(db_url)
+            db_url = ldapurl.LDAPUrl(pickle.loads(db_url))
 
         # If we don't have a URL in the database, then store what we were given.
         # If we don't have any URL at all, then throw.
         if db_url is None:
             if ldap_url is None:
                 raise exceptions.LDAPUrlError
-            self.__db.set_setting('syncrepl_url', str(ldap_url))
+            self.__db.set_setting('syncrepl_url',
+                pickle.dumps(str(ldap_url))
+            )
 
         # Check if someone's trying to change the existing LDAP URL.
         if db_url is not None and ldap_url != db_url:
@@ -379,7 +386,9 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             # example, due to differing ACLs between accounts).
 
             # Since we haven't thrown, allow the new URL.
-            self.__db.set_setting('syncrepl_url', str(new_url))
+            self.__db.set_setting('syncrepl_url',
+                pickle.dumps(str(new_url))
+            )
 
         # Finally, we can set up our LDAP client!
         SimpleLDAPObject.__init__(self, ldap_url.initializeUrl(), **kwargs)
@@ -699,7 +708,11 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
 
         """
-        return self.__db.get_setting('syncrepl_cookie')
+        possible_cookie = self.__db.get_setting('syncrepl_cookie')
+        if possible_cookie is None:
+            return None
+        else:
+            return pickle.loads(possible_cookie)
 
 
     def syncrepl_set_cookie(self, cookie):
@@ -719,7 +732,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         reconnect, so that it knows how far behind we are.
         """
         self.callback.cookie_change(cookie)
-        self.__db.set_setting('syncrepl_cookie', cookie)
+        self.__db.set_setting('syncrepl_cookie', pickle.dumps(cookie))
 
 
     def syncrepl_refreshdone(self):

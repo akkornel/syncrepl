@@ -21,6 +21,7 @@
 
 import pickle
 import sqlite3
+from sys import version_info
 import uuid
 
 from . import exceptions
@@ -374,7 +375,7 @@ class DBInterface(object):
 
                 CREATE TABLE syncrepl_settings (
                     name       TEXT         PRIMARY KEY,
-                    value      OBJECT
+                    value      BLOB
                 );
 
                 INSERT INTO syncrepl_schema (version) VALUES (1);
@@ -421,19 +422,17 @@ class DBInterface(object):
 
         :param str setting: The name of the setting to store.
 
-        :param object value: The object to store.
+        :param bytes value: The object to store.
 
         :returns: None
 
         :throws:syncrepl_client.exceptions.DBSettingError
 
-        This can be used to store a string, bytes, simple object, etc..
-        Basically, anything that is a subclass of :class:`object`.
+        This can be used to store bytes objects (and, on Python 2, string
+        objects, since those are essentially bytes).
 
-        .. note::
-        
-            Be careful storing integers, since they might not be a subclass at
-            the time you try to store the setting.
+        To store something else (including strings), pickle it, and call this
+        method with the resulting binary string.
 
         .. warning::
 
@@ -448,9 +447,16 @@ class DBInterface(object):
             raise exceptions.DBSettingError(
                 'Setting name is not a string.' % (setting,)
             )
-        if not isinstance(value, object):
+        if version_info[0] >= 3 and not isinstance(value, bytes):
             raise exceptions.DBSettingError(
-                'Value for setting "%s" is not an object.' % (setting,)
+                'Value for setting "%s" is not a bytes.' % (setting,)
+            )
+        if (    version_info[0] < 3
+            and not isinstance(value, str)
+            and not isinstance(value, bytes)
+            ):
+            raise exceptions.DBSettingError(
+                'Value for setting "%s" is not a str or bytes.' % (setting,)
             )
 
         self.__db.execute('''
