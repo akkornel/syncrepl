@@ -321,7 +321,9 @@ class DBInterface(object):
         # Grab the schema version number from the table
         c.execute('SELECT version FROM syncrepl_schema')
         schema_version = c.fetchall()
-        if len(schema_version) != 1:
+        if len(schema_version) == 0:
+            raise exceptions.DBSchemaError('Schama table with no entries')
+        if len(schema_version) > 1:
             raise exceptions.DBSchemaError('Too many version entries')
         schema_version = schema_version[0][0]
 
@@ -329,7 +331,9 @@ class DBInterface(object):
         # Check our schema is valid for the specified version.
         # Then, if not the latest, upgrade!
         if schema_version > CURRENT_SCHEMA_VERSION:
-            raise exceptions.SchemaVersionError()
+            raise exceptions.SchemaVersionError(
+                'Schema version %d is too new for us!' % schema_version
+            )
         self._validate_schema(self.__db, schema_version)
         if schema_version < CURRENT_SCHEMA_VERSION:
             self._upgrade_schema(self.__db, schema_version)
