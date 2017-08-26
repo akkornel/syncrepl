@@ -381,9 +381,9 @@ class DBInterface(object):
 
                 INSERT INTO syncrepl_schema (version) VALUES (1);
             ''')
-            db.commit()
             
             # Hand us off to upgrade us from version 1 to whatever we're at now.
+            db.commit()
             return cls._upgrade_schema(db, 1)
 
         # The next upgrade would be here.
