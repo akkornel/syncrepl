@@ -34,42 +34,10 @@ except ImportError:
     import dummy_threading as threading
 
 
-# We want to store an object into the database.
-# Luckily, pickle is forward-compatible, so we're OK as long as the client
-# keeps track of the Python version used (so we don't go back).
-
-def object_to_bytes(object_in):
-    """Convert an object to bytes.
-
-    :param object object_in: The object.
-
-    :returns: A bytes object.
-    """
-    # The parameters depend on Python version.
-    if version_info >= 3:
-        return pickle.dumps(object_in,
-            protocol=pickle.HIGHEST_PROTOCOL
-        )
-    else:
-        return pickle.dumps(object_in, pickle.HIGHEST_PROTOCOL)
-sqlite3.register_adapter(object, object_to_bytes)
-
-
-def bytes_to_object(object_bytes):
-    """Decode a bytes-string-encoded object.
-
-    :param bytes object_bytes: The bytes string-encoded object.
-
-    :returns: The object.
-    """
-    # The parameters depend on Python version.
-    if version_info[0] >= 3:
-        return pickle.loads(object_bytes,
-            fix_imports=False,
-            encoding='bytes'
-        )
-    else:
-        return pickle.loads(object_bytes)
+# Define a custom column column type for our attribute lists, which
+# automatically calls pickle to deserialize it before handing the results to us.
+# Unfortunately, we can't easily/cleanly do this in the other direction,
+# because register_adapter works on entire types, not on column names.
 sqlite3.register_converter('OBJECT', pickle.loads)
 
 

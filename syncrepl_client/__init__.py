@@ -1158,11 +1158,12 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 self.callback.record_rename(db_dn, dn, c)
 
             # Now we've checked the DN, update the DB and do the callback.
+            # NOTE: We have to pickle the attributes ourselves.
             c.execute('''
                 UPDATE syncrepl_records
                    SET attributes = ?
                  WHERE uuid = ?
-            ''', (attrs, uuid))
+            ''', (pickle.dumps(attrs), uuid))
             self.callback.record_change(dn, db_attrs, attrs, c)
 
 
@@ -1183,10 +1184,11 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 syncrepl_delete(old_uuid)
 
             # Now we can insert the record and do the add callback.
+            # NOTE: We have to pickle the attributes ourselves.
             c.execute('''
                 INSERT
                   INTO syncrepl_records
                        (uuid, dn, attributes)
                 VALUES (?, ?, ?)
-            ''', (uuid, dn, attrs))
+            ''', (uuid, dn, pickle.dumps(attrs)))
             self.callback.record_add(dn, attrs, c)
