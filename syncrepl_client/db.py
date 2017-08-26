@@ -69,8 +69,7 @@ def bytes_to_object(object_bytes):
         )
     else:
         return pickle.loads(object_bytes)
-        # Register our custom types
-sqlite3.register_adapter('OBJECT', bytes_to_object)
+sqlite3.register_converter('OBJECT', pickle.loads)
 
 
 # This is the current schema version number.
