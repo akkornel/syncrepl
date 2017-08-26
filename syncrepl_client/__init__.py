@@ -388,7 +388,6 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         # Commit any settings changes, then do a vacuum.
         self.__db.commit()
         self.__db.execute('PRAGMA optimize')
-        self.__db.execute('VACUUM')
 
         # Callback to mark a successful bind.
         self.callback.bind_complete(self, self.__db.cursor())
