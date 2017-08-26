@@ -19,8 +19,7 @@
 #
 
 
-import pyasn1.codec.ber.encoder
-import pyasn1.type.char, pyasn1.type.namedtype, pyasn1.type.univ
+import pickle
 import sqlite3
 import uuid
 
@@ -54,166 +53,40 @@ def bytes_to_uuid(uuid_bytes):a
 
 
 # We want to store an attribute list into the database.
-# That's more complicated, because the attribute list is variable, 
-# So, we'll ASN.1-encode it!!!!!
+# Luckily, pickle is forward-compatible, so we're OK as long as the client
+# keeps track of the Python version used (so we don't go back).
 
-'''
-Attribute-List DEFINITIONS AUTOMATIC TAGS ::= 
-BEGIN
-'''
-'''
-  AttributeListValue ::= CHOICE {
-     string UTF8String,
-     binary OCTET STRING
-  }
-'''
-class AttributeListValue(pyasn1.type.univ.Choice):
-    componentType = pyasn1.type.namedtype.NamedTypes(
-        pyasn1.type.namedtype.NamedType(
-            'string',
-            pyasn1.type.char.UTF8String()
-        ),
-        pyasn1.type.namedtype.NamedType(
-            'binary',
-            pyasn1.type.univ.OctetString()
+def attrlist_to_bytes(attrlist):
+    """Convert an attribute list (a dict of lists) to bytes.
+
+    :param dict attrlist: The attribute list.
+
+    :returns: A bytes object.
+    """
+    # The parameters depend on Python version.
+    if version_info >= 3:
+        return pickle.dumps(attrlist,
+            protocol=pickle.HIGHEST_PROTOCOL
         )
-    )
-'''
-  AttributeListEntry ::= SEQUENCE {
-     name AttributeListValue,
-     value CHOICE {
-         single-valued AttributeListValue,
-         multi-valued SET OF AttributeListValue
-     } OPTIONAL
-  }
-'''
-class AttributeListEntry(pyasn1.type.univ.Sequence):
-    componentType = pyasn1.type.namedtype.NamedTypes(
-        # name AttributeListValue,
-        pyasn1.type.namedtype.NamedType(
-            'name',
-            AttributeListValue()
-        ),
-        # value CHOICE {
-        pyasn1.type.namedtype.OptionalNamedType(
-            'value',
-            pyasn1.type.univ.Choice(
-                # (two different possibilities:)
-                componentType=(pyasn1.type.namedtype.NamedTypes(
-                    # single-valued AttributeListValue,
-                    pyasn1.type.namedtype.NamedType(
-                        'single-valued',
-                        AttributeListValue()
-                    ),
-                    # multi-valued SET OF AttributeListValue
-                    pyasn1.type.namedtype.NamedType(
-                        'multi-valued',
-                        pyasn1.type.univ.SetOf(
-                            componentType=AttributeListValue()
-                        )
-                    ),
-                ))
-            )
+    else:
+        return pickle.dumps(attrlist, pickle.HIGHEST_PROTOCOL)
+
+
+def bytes_to_attrlist(attrlist_bytes):
+    """Decode a bytes-string-encoded attribute list.
+
+    :param bytes attrlist_bytes: The bytes string-encoded attribute list.
+
+    :returns: The attribute list, a dict of lists.
+    """
+    # The parameters depend on Python version.
+    if version_info[0] >= 3:
+        return pickle.loads(attrlist_bytes,
+            fix_imports=False,
+            encoding='bytes'
         )
-    )
-'''
-  AttributeList ::= SEQUENCE OF AttributeListEntry
-'''
-class AttributeList(pyasn1.type.univ.SequenceOf):
-    componentType=AttributeListEntry()
-'''
-END
-'''
-
-def attributes_to_bytes(attrlist):
-    asn1_sequence = AttributeList()
-
-    # Iterate through all our "list" (actually, dict) items.
-    for attr_name, attr_values in attrlist.items():
-        # First, convert our attribute name
-        attr_name_asn1 = AttributeListValue()
-        if type(key) is str:
-            attr_name_asn1.setComponentByName('string',
-                key=attr_name
-            )
-        else:
-            attr_name_asn1.setComponentByName('binary',
-                key=attr_name
-            )
-
-        # Next, convert our values into AttributeListValue entries
-        attr_value_asn1_list = list()
-        for attr_value in attr_values:
-            attr_value_asn1 = AttributeListValue()
-            if type(value) is str:
-                attr_value_asn1.setComponentByName('string',
-                    value=attr_value
-                )
-            else:
-                attr_value_asn1.setComponentByName('binary',
-                    value=attr_value
-                )
-            attr_value_asn1_list.append(attr_value_asn1)
-
-        # Now, convert our list into an object
-        if len(attr_value_asn1_list) == 0:
-            attr_value_asn1 = None
-        # For a single item, list the AttributeListValue directly.
-        elif len(attr_value_asn1_list) == 1:
-            single_valued_item = pyasn1.type.namedtype.NamedType(
-                'single-valued',
-                attr_value_asn1_list[0]
-            )
-            attr_value_asn1_list = single_valued_item
-        # For a multi-item list, construct a set of AttributeListValue
-        else:
-            # Construct our set.
-            multi_valued_set = pyasn1.type.univ.SetOf(
-                componentType=AttributeListValue()
-            )
-            for set_item in attr_value_asn1_list:
-                multi_valued_set.setComponentByPosition(
-                    len(multi_valued_set),
-                    value=set_item
-                )
-
-            # Construct our multi-valued named type.
-            multi_valued_item = pyasn1.type.namedtype.NamedType(
-                'multi-valued',
-                multi_valued_item
-            )
-            attr_value_asn1_list = multi_valued_item            
-
-        # Now we create our AttributeListEntry!
-        list_entry_asn1 = AttributeListEntry()
-        list_entry_asn1.setComponentByName('name',
-            value=attr_name_asn1
-        )
-        if attr_value_asn1_list is not None:
-            list_entry_asn1.setComponentByName('value',
-                value=pyasn1.type.univ.Choice(
-                    componentType=attr_value_asn1_list
-                )
-            )
-
-        # Add the entry to our list!
-        # NOTE: Positions are zero-indexed.
-        asn1_sequence.setComponentByPosition(
-            len(asn1_sequence),
-            value=list_entry_asn1
-
-    # Now that the sequence is built, encode and return it!
-    return pyasn1.codec.ber.encoder.encode(asn1_sequence)
-
-
-def bytes_to_attributes(attrlist_bytes):
-    asn1_struct = pyasn1.codec.ber.encoder.decode(
-        attrlist_bytes,
-        asn1Spec=AttributeList()
-    )
-
-
-
+    else:
+        return pickle.loads(attrlist_bytes)
 
 
 # This is the current schema version number.
