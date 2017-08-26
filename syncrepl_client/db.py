@@ -309,7 +309,7 @@ class DBInterface(object):
         # Go ahead and upgrade to the current version.
         if len(discovered_tables) == 0:
             c.close()
-            return self._upgrade_schema(0)
+            return self._upgrade_schema(self.__db, 0)
 
         # Grab the list of tables, and make sure our version-number-containing
         # table is present.
@@ -335,8 +335,8 @@ class DBInterface(object):
         # Woooo, schema check/upgrade complete!
 
 
-    @staticmethod
-    def _validate_schema(db, version):
+    @classmethod
+    def _validate_schema(cls, db, version):
         # If the schema version is higher than we know, error out.
         if version > CURRENT_SCHEMA_VERSION:
             raise exceptions.SchemaVersionError('Schema too new')
@@ -351,10 +351,11 @@ class DBInterface(object):
             pass
 
 
-    @staticmethod
-    def _upgrade_schema(db, old_version):
+    @classmethod
+    def _upgrade_schema(cls, db, old_version):
         # To enable recursion, support being asked to upgrade from the current
-        # schema version to the current schema version.
+        # schema version to the current schema version.  This also tells us
+        # that, since we're done making changes, it's a good time to commit!
         if old_version == CURRENT_SCHEMA_VERSION:
             return None
 
@@ -381,7 +382,7 @@ class DBInterface(object):
             db.commit()
             
             # Hand us off to upgrade us from version 1 to whatever we're at now.
-            return _upgrade_schema(db, 1)
+            return cls._upgrade_schema(db, 1)
 
         # The next upgrade would be here.
 
