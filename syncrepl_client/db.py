@@ -196,7 +196,6 @@ class DBInterface(object):
             detect_types = sqlite3.PARSE_DECLTYPES
         )
 
-
         # Check (and, if necessary, upgrade) our schema.
         self._check_and_upgrade_schema()
 
