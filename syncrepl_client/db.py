@@ -256,6 +256,18 @@ class DBInterface(object):
         return self._db.cursor()
 
     
+    def commit(self):
+        """Commit the current transaction.
+        """
+        self.__db.commit()
+
+
+    def rollback(self):
+        """Roll back the current transaction.
+        """
+        self.__db.rollback()
+
+    
     def _check_and_upgrade_schema(self):
         """Check (and, if needed, upgrade) a database's schema.
 
