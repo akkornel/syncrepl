@@ -806,22 +806,19 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 # NOTE: The only reason we just need a local index, is because
                 # this object is read-only.
                 class ItemIter(Iterator):
-                    def __init__(iterself, item_list, get_item):
+                    def __init__(iterself, item_list):
                         iterself.i = 0
                         iterself.item_list = item_list
-                        iterself.get_item = get_item
                     def __next__(iterself):
                         # Remember, i is zero-indexed
                         if iterself.i >= len(iterself.item_list):
                             raise StopIteration
                         dn = iterself.item_list[iterself.i]
-                        attrlist = iterself.get_item(dn)
                         iterself.i += 1
-                        return attrlist
+                        return dn
 
-                # Give the iterator to the client, along with a list ref, and a
-                # method ref.
-                return ItemIter(self.__syncrepl_list, self.__getitem__)
+                # Give the iterator to the client, along with a list ref.
+                return ItemIter(self.__syncrepl_list)
 
             def __len__(self):
                 # Populate, and then return length.
