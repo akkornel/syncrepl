@@ -830,6 +830,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         :returns: None.
 
+        :raises: syncrepl_client.exceptions.DBConsistencyWarning
+
         .. note::
 
             This is an internal Syncrepl operation.  It is documented here for
@@ -845,11 +847,37 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         :meth:`~syncrepl_client.callbacks.BaseCallback.record_delete` callback
         for each UUID.
         """
+        c = self.__db.cursor()
         for uuid in uuids:
-            self.callback.record_delete(self.__uuid_dn_map[uuid])
-            del self.__dn_uuid_map[self.__uuid_dn_map[uuid]]
-            del self.__uuid_dn_map[uuid]
-            del self.__uuid_attrs[uuid]
+            # First, get our DN
+            c.execute('''
+                SELECT dn
+                  FROM syncrepl_records
+                 WHERE uuid = ?
+            ''', (uuid,))
+            dn = c.fetchone()
+
+            # If the DN doesn't exist, then that's a problem, because the LDAP
+            # server things we have it!  This is only a warning, because it's
+            # possible we are replaying an operation.
+            if dn is None:
+                raise exceptions.DBConsistencyWarning(
+                    'Attempted to delete UUID %d from the database, but it'
+                    'does not exist!' % (uuid,)
+                )
+                return
+
+            # Go ahead and delete (but don't commit yet!)
+            c.execute('''
+                DELETE
+                  FROM syncrepl_records
+                 WHERE uuid = ?
+            ''', (uuid,))
+
+            # Do our callback, and commit
+            self.callback.record_delete(dn[0], c)
+            c.commit()
+        c.close()
 
 
     def syncrepl_present(self, uuids, refreshDeletes=False):

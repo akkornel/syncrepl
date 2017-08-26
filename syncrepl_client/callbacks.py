@@ -188,10 +188,12 @@ class BaseCallback(object):
         pass
 
     @classmethod
-    def record_delete(cls, dn):
+    def record_delete(cls, dn, cursor):
         """Called to indicate the deletion of an LDAP record.
 
         :param str dn: The DN of the deleted record.
+
+        :param sqlite3.Cursor cursor: A mid-transaction database cursor.
 
         :return: None - any returned value is ignored.
 
@@ -201,6 +203,17 @@ class BaseCallback(object):
         refresh-and-perist mode, the deletion may have taken place at any time 
         since your last update.  In the persist phase of refresh-and-persist 
         mode, the entry has just disappeared.
+
+        `cursor` provides access to the underlying database, as described in
+        :class:`~syncrepl_client.DBInterface`.  If you are storing your own
+        data in syncrepl_client's database, you can use this cursor to make
+        appropriate changes to *your own* tables.  That will ensure your
+        database changes are saved at the same time as ours!
+
+        .. warning::
+
+            Do not commit the in-progress transaction!  The commit will take
+            place automatically, once your callback returns.
         """
         pass
 
@@ -374,7 +387,7 @@ class LoggingCallback(BaseCallback):
                 print("\t\t", value, sep='', file=cls.dest)
 
     @classmethod
-    def record_delete(cls, dn):
+    def record_delete(cls, dn, cursor):
         print('DELETED RECORD:', dn, file=cls.dest)
 
     @classmethod
