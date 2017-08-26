@@ -179,6 +179,8 @@ else:
 # Clean up and exit
 
 print('CLIENT EXIT START')
+if args.persist is True:
+    client.db_reconnect()
 client.unbind()
 print('CLIENT EXIT COMPLETE!')
 exit(0)
