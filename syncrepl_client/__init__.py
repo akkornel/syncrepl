@@ -1085,49 +1085,80 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         appropriately.
         """
 
-        # Check if the UUID is in our map.
-        if uuid in self.__uuid_dn_map:
-            # We already have this UUID, so the DN and/or attributes have changed.
+        # We're need a cursor early for this one!
+        c = self.__db.cursor()
 
-            # Check first for DN change.
-            if self.__uuid_dn_map[uuid] != dn:
-                # Is there already a DN in the map???
-                if dn in self.__dn_uuid_map:
-                    # Our new DN is already in the map!  That means a deletion
-                    # happened at some point in the past, but we missed it.
-                    # We need to completely delete the "old" entry;
-                    # only then can we continue with the rename.
-                    self.syncrepl_delete(self.__dn_uuid_map[dn])
+        # First, we need to grab any existing entry from the DB.
+        c.execute('''
+            SELECT dn, attributes
+              FROM syncrepl_records
+             WHERE uuid = ?
+        ''', (uuid,))
+        db_record = c.fetchone()
 
-                # At this point, the new DN is clear to occupy.
-                # Let the client know about the rename.
-                self.callback.record_rename(self.__uuid_dn_map[uuid], dn)
+        # If a DB record already exists, then we have a change of some sort.
+        if db_record is not None:
+            # Either the DN changed, or the attributes, or both.
+            db_dn = db_record[0]
+            db_attrs = db_record[1]
 
-                # Now delete the old DN-UUID map entry, and update both maps.
-                del self.__dn_uuid_map[__uuid_dn_map[uuid]]
-                self.__dn_uuid_map[dn] = uuid
-                self.__uuid_dn_map[uuid] = dn
+            # First, check if the DN changed.
+            if dn != db_dn:
+                # OK, we have a DN change.
 
-            # Besides the DN change, other attributes may also have changed.
-            # In fact, since the DN is basically (key attr) + (base DN), we
-            # know that at least the key attribute changed!
+                # But first, might the new DN already be in the map?
+                # Especially if we're being refreshed, we might have a small
+                # inconsistency.  So, check for the new DN.
+                c.execute('''
+                    SELECT uuid
+                      FROM syncrepl_attributes
+                     WHERE dn = ?
+                ''', (dn,))
+                possible_db_record = c.fetchone()
+                if possible_db_record is not None:
+                    # We have an old record in the way.  Act like we got an
+                    # "item deleted" message from the LDAP server.
+                    old_uuid = possible_db_record[0]
+                    syncrepl_delete(old_uuid)
 
-            # Do a callback, then update our record.
-            self.callback.record_change(dn, self.__uuid_attrs[uuid], attrs)
-            self.__uuid_attrs[uuid] = attrs
+                # Now we can update the DB with the new DN, and do the callback.
+                c.execute('''
+                    UPDATE syncrepl_attributes
+                       SET dn = ?
+                     WHERE uuid = ?
+                ''', (dn, uuid))
+                self.callback.record_rename(db_dn, dn, c)
+
+            # Now we've checked the DN, update the DB and do the callback.
+            c.execute('''
+                UPDATE syncrepl_attributes
+                   SET attributes = ?
+                 WHERE uuid = ?
+            ''', (attrs, uuid))
+            self.callback.record_change(dn, db_attrs, attrs, c)
+
+
+        # If we're here, then this UUID is new to us!
         else:
-            # The UUID is new, so add it!
+            # Just like before, we have to make sure our DN isn't already in
+            # the database.
+            c.execute('''
+                SELECT uuid
+                  FROM syncrepl_attributes
+                 WHERE dn = ?
+            ''', (dn,))
+            possible_db_record = c.fetchone()
+            if possible_db_record is not None:
+                # We have an old record in the way.  Act like we got an "item
+                # deleted" message from the LDAP server.
+                old_uuid = possible_db_record[0]
+                syncrepl_delete(old_uuid)
 
-            # But first, is the DN already in the map???
-            if dn in self.__dn_uuid_map:
-                # Our new DN is already in the map!  That means a deletion
-                # happened at some point in the past, and this is a totally new
-                # entry, but we missed that happening.
-                # We need to completely delete the old entry, using the old UUID.
-                self.syncrepl_delete(self.__dn_uuid_map[dn])
-
-            # Our maps are clear!  Update the map and do the callback.
-            self.__uuid_dn_map[uuid] = dn
-            self.__dn_uuid_map[dn] = uuid
-            self.__uuid_attrs[uuid] = attrs
-            self.callback.record_add(dn, attrs)
+            # Now we can insert the record and do the add callback.
+            c.execute('''
+                INSERT
+                  INTO syncrepl_attributes
+                       (uuid, dn, attributes)
+                VALUES (?, ?, ?)
+            ''', (uuid, dn, attrs))
+            self.callback.record_add(db, attrs, c)
