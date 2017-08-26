@@ -19,6 +19,31 @@
 #
 
 
+class VersionError(Exception):
+    """Database is too new.
+
+    This exception is thrown when attempting to use a database that was either
+    created with a newer version of syncrepl_client, or was created in a newer
+    version of Python.
+
+    Class includes the following attributes:
+
+    * `component`: Either "python" or "syncrepl_client".
+
+    * `their_version`: A tuple.
+
+    * `our_version`: Another tuple.
+    """
+    def __init__(self, which, ours, db):
+        self.our_version = ours
+        self.their_version = db
+        self.component = which
+
+    def __str__(self):
+        return '%s is version %s, but we are %s'
+               % (self.component, self.their_version, self.our_version)
+
+
 class ClosedError(Exception):
     """Action performed on an unbound instance.
 

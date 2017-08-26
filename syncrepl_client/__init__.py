@@ -194,6 +194,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         :returns: A Syncrepl instance.
 
+        :raises: syncrepl_client.exceptions.VersionError
+
         This is the :class:`~syncrepl_client.Syncrepl` class's constructor.  In
         addition to basic initialization, it is also responsible for making the
         initial connection to the LDAP server, binding, and starting the
@@ -276,68 +278,50 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         self.__db = None
         self.__db = db.DBInterface(data_path)
 
-        # Check the Python version for a mismatch.
-        # If the major or minor numbers differ, then prepare to wipe
-        # everything.
-        if (('version' in self.__data) and
-            ('pyversion' not in self.__data)
+        # If the versions are missing, then set them now.
+        if (    (db.get_setting('syncrepl_version') is None)
+            and (db.get_setting('syncrepl_pyversion') is None)
         ):
-            del self.__data['version']
+            db.set_setting('syncrepl_version', _version.__version_tuple__)
+            db.set_setting('syncrepl_pyversion', tuple(version_info))
 
-        if (('version' in self.__data) and
-            ('pyversion' in self.__data) and
-            ((self.__data['pyversion'][0] != version_info.major) or
-             (self.__data['pyversion'][1] != version_info.minor)
-            )
-        ):
-            del self.__data['version']
+        def compare_versions(a, b):
+            """Compare two version tuples.
 
-        # Check the data file version for a mismatch.  If we find one, then
-        # prepare to wipe everything.
-        if (('version' in self.__data) and
-                (self.__data['version'] != __version__)):
-            del self.__data['version']
+            :param tuple a: The left side.
 
-        # If no version is defined, set it and clear everything else.
-        if 'version' not in self.__data:
-            # Try to grab the URL, if it exists.
-            if (('url' in self.__data) and
-                (ldap_url is None)
-            ):
-                # This fetch might fail, which is OK.
-                try:
-                    ldap_url = self.__data['url']
-                except:
-                    pass
+            :param tuple b: The right side.
 
-            # Calling .clear() might not work, because of version changes.
-            # It might be amazing that we even got this far.
-            # So, close and re-create all shelves.
-            self.__data.close()
-            self.__data = shelve.open(data_path + 'data',
-                flag='n',
-                writeback=True
-            )
-            self.__uuid_dn_map.close()
-            self.__uuid_dn_map = shelve.open(data_path + 'uuid_map',
-                flag='n',
-                writeback=True
-            )
-            self.__dn_uuid_map.close()
-            self.__dn_uuid_map = shelve.open(data_path + 'dn_map',
-                flag='n',
-                writeback=True
-            )
-            self.__uuid_attrs.close()
-            self.__uuid_attrs = shelve.open(data_path + 'attrs',
-                flag='n',
-                writeback=True
-            )
+            :returns: -1 if a<b, zero if a==b, or 1 if a>b.
 
-            # Set version and sync
-            self.__data['version'] = __version__
-            self.__data['pyversion'] = tuple(version_info)
-            self.sync()
+            .. note::
+                Only the first three components are compared.
+            """
+            # A simple loop over each component
+            for i in (0,1,2):
+                # Check for difference, fall through to next if the same.
+                if a[i]<b[i]:
+                    return -1
+                elif a[i]>b[i]:
+                    return 1
+            return 0
+
+        # Check our pyversion, and throw if we're too new.
+        db_pyversion = db.get_setting('syncrepl_pyversion')
+        db_version = db.get_setting('syncrepl_version')
+        if compare_versions(db_pyversion, tuple(version_info)) == 1:
+            raise exceptions.VersionError(
+                which='python',
+                ours=tuple(version_info),
+                db=db_pyversion,
+
+            )
+        if compare_versions(db_version, _version.__version_tuple__) == 1:
+            raise exceptions.VersionError(
+                which='syncrepl_client',
+                ours=_version.__version_tuple_,
+                db=db_version
+            )
 
         # If ldap_url exists, and isn't an object, then convert it
         if ((ldap_url is not None) and (type(ldap_url) is not ldapurl.LDAPUrl)):
