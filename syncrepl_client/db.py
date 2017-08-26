@@ -55,41 +55,41 @@ def bytes_to_uuid(uuid_bytes):
     return uuid.UUID(bytes=uuid_bytes)
 
 
-# We want to store an attribute list into the database.
+# We want to store an object into the database.
 # Luckily, pickle is forward-compatible, so we're OK as long as the client
 # keeps track of the Python version used (so we don't go back).
 
-def attrlist_to_bytes(attrlist):
-    """Convert an attribute list (a dict of lists) to bytes.
+def object_to_bytes(object_in):
+    """Convert an object to bytes.
 
-    :param dict attrlist: The attribute list.
+    :param object object_in: The object.
 
     :returns: A bytes object.
     """
     # The parameters depend on Python version.
     if version_info >= 3:
-        return pickle.dumps(attrlist,
+        return pickle.dumps(object_in,
             protocol=pickle.HIGHEST_PROTOCOL
         )
     else:
-        return pickle.dumps(attrlist, pickle.HIGHEST_PROTOCOL)
+        return pickle.dumps(object_in, pickle.HIGHEST_PROTOCOL)
 
 
-def bytes_to_attrlist(attrlist_bytes):
-    """Decode a bytes-string-encoded attribute list.
+def bytes_to_object(object_bytes):
+    """Decode a bytes-string-encoded object.
 
-    :param bytes attrlist_bytes: The bytes string-encoded attribute list.
+    :param bytes object_bytes: The bytes string-encoded object.
 
-    :returns: The attribute list, a dict of lists.
+    :returns: The object.
     """
     # The parameters depend on Python version.
     if version_info[0] >= 3:
-        return pickle.loads(attrlist_bytes,
+        return pickle.loads(object_bytes,
             fix_imports=False,
             encoding='bytes'
         )
     else:
-        return pickle.loads(attrlist_bytes)
+        return pickle.loads(object_bytes)
 
 
 # This is the current schema version number.
@@ -191,6 +191,8 @@ class DBInterface(object):
         # Register our custom types
         self.__db.register_adapter(uuid.UUID, uuid_to_bytes)
         self.__db.register_converter('UUID', bytes_to_uuid)
+        newbie.__db.register_adapter(object, object_to_bytes)
+        newbie.__db.register_adapter('OBJECT', bytes_to_dict)
 
         # Check (and, if necessary, upgrade) our schema.
         self._check_and_upgrade_schema()
@@ -230,6 +232,10 @@ class DBInterface(object):
         newbie.__db = sqlite3.connect(self.__data_path,
             detect_types = sqlite3.PARSE_DECLTYPES
         )
+        newbie.__db.register_adapter(uuid.UUID, uuid_to_bytes)
+        newbie.__db.register_converter('UUID', bytes_to_uuid)
+        newbie.__db.register_adapter(object, object_to_bytes)
+        newbie.__db.register_adapter('OBJECT', bytes_to_dict)
         return newbie
 
 
@@ -331,7 +337,6 @@ class DBInterface(object):
             pass
 
 
-
     def _upgrade_schema(self, old_version):
         # To enable recursion, support being asked to upgrade from the current
         # schema version to the current schema version.
@@ -349,13 +354,13 @@ class DBInterface(object):
                 CREATE TABLE syncrepl_records (
                     uuid       UUID         PRIMARY KEY,
                     dn         TEXT         UNIQUE,
-                    attributes ATTRLIST
+                    attributes OBJECT
                 )
             ''')
             c.execute('''
                 CREATE TABLE syncrepl_settings (
                     name       TEXT         PRIMARY KEY,
-                    value      BLOB
+                    value      OBJECT
                 )                
             ''')
             c.execute('INSERT INTO syncrepl_schema (version) VALUES (1)')
