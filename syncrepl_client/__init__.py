@@ -204,7 +204,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         :raises: syncrepl_client.exceptions.VersionError,
         syncrepl_client.exceptions.LDAPUrlError,
-        syncrepl_client.exceptions.LDAPUrlConflict
+        syncrepl_client.exceptions.LDAPUrlConflict,
+        sqlite3.OperationalError
 
         This is the :class:`~syncrepl_client.Syncrepl` class's constructor.  In
         addition to basic initialization, it is also responsible for making the
