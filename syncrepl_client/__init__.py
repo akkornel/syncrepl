@@ -287,6 +287,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             db.set_setting('syncrepl_version', _version.__version_tuple__)
             db.set_setting('syncrepl_pyversion', tuple(version_info))
 
+        # Make a small function to compare version tuples.
         def compare_versions(a, b):
             """Compare two version tuples.
 
@@ -477,7 +478,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
 
     def db(self):
-        """
+        """Return a sqlite3 database instance for client use.
 
         :returns: A DBInterface instance.
 
