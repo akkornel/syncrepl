@@ -368,8 +368,8 @@ class DBInterface(object):
                 );
 
                 CREATE TABLE syncrepl_records (
-                    dn         TEXT         UNIQUE,
                     uuid       TEXT         PRIMARY KEY,
+                    dn         BLOB         UNIQUE,
                     attributes OBJECT
                 );
 
