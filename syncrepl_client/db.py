@@ -329,14 +329,15 @@ class DBInterface(object):
         # Then, if not the latest, upgrade!
         if schema_version > CURRENT_SCHEMA_VERSION:
             raise exceptions.SchemaVersionError()
-        self._validate_schema(schema_version)
+        self._validate_schema(self.__db, schema_version)
         if schema_version < CURRENT_SCHEMA_VERSION:
-            self._upgrade_schema(schema_version)
+            self._upgrade_schema(self.__db, schema_version)
 
         # Woooo, schema check/upgrade complete!
 
 
-    def _validate_schema(self, version):
+    @staticmethod
+    def _validate_schema(db, version):
         # If the schema version is higher than we know, error out.
         if version > CURRENT_SCHEMA_VERSION:
             raise exceptions.SchemaVersionError('Schema too new')
@@ -351,7 +352,8 @@ class DBInterface(object):
             pass
 
 
-    def _upgrade_schema(self, old_version):
+    @staticmethod
+    def _upgrade_schema(db, old_version):
         # To enable recursion, support being asked to upgrade from the current
         # schema version to the current schema version.
         if old_version == CURRENT_SCHEMA_VERSION:
@@ -359,7 +361,7 @@ class DBInterface(object):
 
         # Start by upgrading us from version 0 to version 1.
         elif old_version == 0:
-            self.__db.executescript('''
+            db.executescript('''
                 CREATE TABLE syncrepl_schema (
                     version    UNSIGNED INT PRIMARY KEY
                 );
@@ -377,11 +379,10 @@ class DBInterface(object):
 
                 INSERT INTO syncrepl_schema (version) VALUES (1);
             ''')
-            self.__db.commit()
-            c.close()
+            db.commit()
             
             # Hand us off to upgrade us from version 1 to whatever we're at now.
-            return self._upgrade_schema(1)
+            return _upgrade_schema(db, 1)
 
         # The next upgrade would be here.
 
