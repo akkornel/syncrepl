@@ -675,10 +675,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
 
         """
-        if 'cookie' in self.__data:
-            return self.__data['cookie']
-        else:
-            return None
+        return self.__db.get_setting('syncrepl_cookie')
 
 
     def syncrepl_set_cookie(self, cookie):
@@ -698,7 +695,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         reconnect, so that it knows how far behind we are.
         """
         self.callback.cookie_change(cookie)
-        self.__data['cookie'] = cookie
+        self.__db.set_setting('syncrepl_cookie', cookie)
 
 
     def syncrepl_refreshdone(self):
