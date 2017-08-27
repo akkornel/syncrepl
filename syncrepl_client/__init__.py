@@ -1075,6 +1075,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             # We're almost at the end of the refresh.  Every entry that we have
             # in state, but that didn't get a "present" message, has been
             # deleted!
+            deleted_uuids = list()
 
             # Look through each UUID in the database.
             c = self.__db.execute('''
