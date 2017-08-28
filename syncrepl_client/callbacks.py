@@ -268,7 +268,7 @@ class BaseCallback(object):
         pass
 
     @classmethod
-    def record_rename(cls, old_dn, new_dn):
+    def record_rename(cls, old_dn, new_dn, cursor):
         """Called to indicate a change in DN.
 
         :param str old_dn: The old DN.
@@ -305,7 +305,7 @@ class BaseCallback(object):
         pass
 
     @classmethod
-    def record_change(cls, dn, old_attrs, new_attrs):
+    def record_change(cls, dn, old_attrs, new_attrs, cursor):
         """Called to indicate a change in attributes.
 
         :param str dn: The DN of the changed record.
