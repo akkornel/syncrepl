@@ -46,7 +46,7 @@ class VersionError(Exception):
 
 class VersionJumpError(VersionError):
     def __str__(self):
-        return (  'Can not jump from Python 2 (%s) to Python 3 (%s)'
+        return (  'Can not jump from Python %d to Python %d'
                 % (self.their_version, self.our_version))
 
 

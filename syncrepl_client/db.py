@@ -352,6 +352,10 @@ class DBInterface(object):
                 CREATE TABLE syncrepl_schema (
                     version    UNSIGNED INT PRIMARY KEY
                 );
+                
+                CREATE TABLE syncrepl_pyversion (
+                    major      UNSIGNED INT PRIMARY KEY
+                );
 
                 CREATE TABLE syncrepl_records (
                     uuid       TEXT         PRIMARY KEY,
