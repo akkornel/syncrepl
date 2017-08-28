@@ -19,6 +19,9 @@
 #
 
 
+# Python 2 support
+from __future__ import print_function
+
 from argparse import ArgumentParser
 import signal
 from syncrepl_client import Syncrepl, SyncreplMode
