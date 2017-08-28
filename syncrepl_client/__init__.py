@@ -325,24 +325,41 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
             return 0
 
         # Check our pyversion, and throw if we're too new.
+        # Otherwise, upgrade!
         db_pyversion = pickle.loads(
             self.__db.get_setting('syncrepl_pyversion')
         )
         db_version = pickle.loads(
             self.__db.get_setting('syncrepl_version')
         )
-        if compare_versions(db_pyversion, tuple(version_info)) == 1:
+        db_pyversion_compare = compare_versions(
+            db_pyversion, tuple(version_info)
+        )
+        db_version_compare = compare_versions(
+            db_version, _version.__version_tuple__
+        )
+        if db_pyversion_compare == 1:
             raise exceptions.VersionError(
                 which='python',
                 ours=tuple(version_info),
                 db=db_pyversion,
 
             )
-        if compare_versions(db_version, _version.__version_tuple__) == 1:
+        elif db_pyversion_compare == -1:
+            self.__db.set_setting(
+                'syncrepl_pyversion',
+                pickle.dumps(tuple(version_info))
+            )
+        if db_version_compare == 1:
             raise exceptions.VersionError(
                 which='syncrepl_client',
                 ours=_version.__version_tuple_,
                 db=db_version
+            )
+        elif db_version_compare == -1:
+            self.__db.set_setting(
+                'syncrepl_version',
+                pickle.dumps(_version.__version_tuple__)
             )
 
         # If ldap_url exists, and isn't an object, then convert it
