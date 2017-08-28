@@ -90,10 +90,17 @@ The Syncrepl client has a number of direct and indirect requirements.
 .. _OpenLDAP: https://www.openldap.org
 .. _ldapsearch: https://linux.die.net/man/1/ldapsearch
 
-* Python 2.7, or Python 3.6.
+* Python 2.7, or Python 3.3.
 
-  It is likely that Python 2.6—and older versions of Python 3—will work, but
-  those have not yet been tested.  This entry will update once they are!
+  It is likely that Python 2.6 will work, but this has not yet been tested.
+  CentOS 6 users, which have Python 2.6, should consider using Python 3.4 from
+  EPEL.
+
+  When using Python 3, Python 3.3 or later is required because of `pyldap`_'s
+  requirements (see `issue 117`_).  If you are on a system which has Python 3.2
+  (such as Debian wheezy), consider using Python 2.7 instead.
+
+.. _issue 117: https://github.com/pyldap/pyldap/issues/117
 
 * `python-ldap`_ 99 or later (Python 2), or `pyldap`_ 2.4.37 or later
   (Python 3).

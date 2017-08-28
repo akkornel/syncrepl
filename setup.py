@@ -37,7 +37,7 @@ if ((setuptools_under_18 is True) and
 ):
     raise OSError('setuptools is too old to create good wheel files.')
 
-# Make sure we have Python 2.7, or 3.1+
+# Make sure we have Python 2.7, or 3.3+
 # This is covered again later in the 'python_requires' option, but let's be
 # safe.
 if ((version_info[0] == 2) and
@@ -45,11 +45,11 @@ if ((version_info[0] == 2) and
 ):
     raise OSError('With Python 2, Python 2.7 is required.')
 if ((version_info[0] == 3) and
-    (version_info[1] == 0)
+    (version_info[1] < 3)
 ):
-    raise OSError('With Python 3, Python 3.1 or later is required.')
+    raise OSError('With Python 3, Python 3.3 or later is required.')
 
-# Pythons 3.4 and lower require enum34
+# Python 3.3 and lower require enum34
 if setuptools_under_18 is True:
     if ((version_info[0] == 2) or
         ((version_info[0] == 3) and
@@ -68,7 +68,7 @@ if setuptools_under_18 is True:
         install_requirements.append('pyldap')
 else:
     extra_requirements[":python_version<='2.7'"] = ['python-ldap>=99']
-    extra_requirements[":python_version>='3.1'"] = ['pyldap>=2.4.37']
+    extra_requirements[":python_version>='3'"] = ['pyldap>=2.4.37']
 
 # We need pyasn1.
 # Well, actually python-ldap/pyldap require pyasn1, but it's an optional
@@ -114,7 +114,7 @@ setup(
     zip_safe = True,
     include_package_data = True,
 
-    python_requires = '>=2.7,!=3.0.*',
+    python_requires = '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*',
     install_requires = install_requirements,
     extras_require = extra_requirements,
     provides = ['syncrepl_client'],
