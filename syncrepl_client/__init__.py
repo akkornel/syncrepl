@@ -343,9 +343,16 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 which='python',
                 ours=tuple(version_info),
                 db=db_pyversion,
-
             )
         elif db_pyversion_compare == -1:
+            # Special check:  If our Python is newer than the DB's Python, make
+            # sure we aren't jumping from Python 2 to Python 3.
+            # If we jumped from 2 to 3, our strings might go wonky!
+            if db_pyversion[0] == 2 and version_info[0] == 3:
+                raise exceptions.VersionJumpError(
+                    ours=tuple(version_info),
+                    db=db_pyversion
+                )
             self.__db.set_setting(
                 'syncrepl_pyversion',
                 pickle.dumps(tuple(version_info))

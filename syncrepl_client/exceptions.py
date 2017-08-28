@@ -44,6 +44,12 @@ class VersionError(Exception):
                 % (self.component, self.their_version, self.our_version))
 
 
+class VersionJumpError(VersionError):
+    def __str__(self):
+        return (  'Can not jump from Python 2 (%s) to Python 3 (%s)'
+                % (self.their_version, self.our_version))
+
+
 class ClosedError(Exception):
     """Action performed on an unbound instance.
 
