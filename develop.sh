@@ -36,7 +36,7 @@ set -e
 if [ $MACPORTS ]; then
     echo "BEGIN MacPorts package install (prepare to enter your admin password)"
     sudo port selfupdate
-    sudo port install python27 +readline python32 python33 python34 +readline \
+    sudo port install python27 +readline python33 python34 +readline \
                       python35 +readline python36 +readline \
                       py27-pip py27-setuptools py33-pip py33-setuptools \
                       py34-pip py34-setuptools py35-pip py35-setuptools \
@@ -59,15 +59,6 @@ TMPDIR=$(mktemp -d)
 echo "Temporary files being stored in $TMPDIR"
 sleep 1
 cd $TMPDIR
-
-# Setuptools is first!
-echo "Specially downloading and installing setuptools 5.5.1 for Python 3.2."
-sleep 1
-curl https://pypi.python.org/packages/47/15/7f9aabb1ce09d3dc5ecdff2f5a97e0a47f724fe8e398eff6a88626d0164c/setuptools-5.5.1.tar.gz#md5=86bbbfa732c234535316a7d74a49c6ad | tar -xzvf -
-cd setuptools-5.5.1
-python3.2 setup.py build ; python3.2 setup.py install --user
-cd ..
-rm -rf setuptools-5.5.1
 
 echo "For Pythons 2.7 and 3.3+, ensuring setuptools is up-to-date."
 for version in 2.7 3.3 3.4 3.5 3.6; do
@@ -100,9 +91,9 @@ cd ldaps/python-ldap-*
 python2.7 setup.py build ; python2.7 setup.py install --user
 cd ../..
 
-echo "Building and installing PyLDAP for Python 3.2+"
+echo "Building and installing PyLDAP for Python 3.3+"
 cd ldaps/pyldap*
-for version in 3.2 3.3 3.4 3.5 3.6; do
+for version in 3.3 3.4 3.5 3.6; do
     echo "--- Python ${version}"
     sleep 1
     python${version} setup.py build ; python${version} setup.py install --user
@@ -118,7 +109,7 @@ cd $OLDCWD
 rmdir $TMPDIR
 
 echo "Running \`setup.py develop\` for each Python."
-for version in 3.2 3.3 3.4 3.5 3.6; do
+for version in 3.3 3.4 3.5 3.6; do
     echo "--- Python ${version}"
     sleep 1
     python${version} setup.py develop --user
