@@ -441,6 +441,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         # default that the LDAP module uses.
         if ldap_url.filterstr is None:
             ldap_url.filterstr = '(objectClass=*)'
+        if ldap_url.scope is None:
+            ldap_url.scope = ldapurl.LDAP_SCOPE_SUBTREE
 
         # Prepare the search
         self.ldap_object_search = self.syncrepl_search(ldap_url.dn, ldap_url.scope,
