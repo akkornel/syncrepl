@@ -946,10 +946,12 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         # Update our internal tracking variable, delete the present UUID list,
         # and (finally!) commit.  We also trigger an optimize and vacuum run.
+        # And now that we use WAL, we also trigger a checkpoint.
         self.__in_refresh = False
         self.__db.commit()
         self.__db.optimize()
         self.__db.vacuum()
+        self.__db.execute('PRAGMA wal_checkpoint(RESTART)')
         del self.__present_uuids
 
 

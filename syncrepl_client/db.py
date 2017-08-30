@@ -142,6 +142,9 @@ class DBInterface(object):
             detect_types = sqlite3.PARSE_DECLTYPES
         )
 
+        # Set our synchronous level to FULL.
+        self.__db.execute('PRAGMA synchronous = NORMAL')
+
         # Check (and, if necessary, upgrade) our schema.
         self._check_and_upgrade_schema()
 
@@ -349,6 +352,8 @@ class DBInterface(object):
         # Start by upgrading us from version 0 to version 1.
         elif old_version == 0:
             db.executescript('''
+                PRAGMA journal_mode = WAL;
+
                 CREATE TABLE syncrepl_schema (
                     version    UNSIGNED INT PRIMARY KEY
                 );
