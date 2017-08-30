@@ -834,6 +834,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         """
         self.callback.cookie_change(cookie)
         self.__db.set_setting('syncrepl_cookie', pickle.dumps(cookie))
+        self.__db.commit()
 
 
     def syncrepl_refreshdone(self):
@@ -1297,3 +1298,9 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
                 VALUES (?, ?, ?)
             ''', (uuid, dn, pickle.dumps(attrs)))
             self.callback.record_add(dn, attrs, c)
+
+        # Now that the inserts & callbacks are done, commit and close cursor.
+        # (Only commit if we are not in the refresh phase.)
+        if self.__in_refresh is False:
+            self.__db.commit()
+        c.close()
