@@ -184,7 +184,7 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
       are still being documented here, for educational purposes.
     '''
 
-    def __init__(self, data_path, callback, mode, ldap_url=None, **kwargs):
+    def __init__(self, data_path, callback, mode, ldap_url=None, starttls=False, **kwargs):
         """Instantiate, connect to an LDAP server, and bind.
 
         :param str data_path: A path to the database file.
@@ -198,6 +198,8 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
         :param ldap_url: A complete LDAP URL string, or an LDAPUrl instance, or :obj:`None`.
 
         :type ldap_url: str or ldapurl.LDAPUrl or None
+
+        :param bool starttls: Weather STARTTLS should be used before binding.
 
         :returns: A Syncrepl instance.
 
@@ -253,6 +255,16 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
           extension may be used to specify a bind DN (or "GSSAPI" for GSSAPI
           bind).  When using simple bind, the `X-BINDPW` extension must hold
           the bind password.
+
+        - :obj:`starttls` is a boolean value.  If :obj:`True`, then after the
+          initial connection is made to the LDAP server, `STARTTLS` will be
+          used to secure the connection.  Binding will only take place when the
+          `STARTTLS` operation is completed.
+
+          .. note::
+
+              `STARTTLS` is only usable when using the `ldap` connection
+              scheme.
 
         The :meth:`~syncrepl_client.callbacks.BaseCallback.bind_complete`
         callback will be called at some point during the constructor's
@@ -439,6 +451,10 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         # Finally, we can set up our LDAP client!
         SimpleLDAPObject.__init__(self, ldap_url.initializeUrl(), **kwargs)
+
+        # If we should do STARTTLS, then do it now.
+        if starttls is True:
+            self.start_tls_s()
 
         # Bind to the server (this also triggers connection setup)
         if ldap_url.who is None:

@@ -43,7 +43,7 @@ http://syncrepl-client.readthedocs.io/en/latest/
 argp.add_argument('-V', '--version',
     action='version',
     version='syncrepl_client version ' + __version__,
-    help='Print the installed version of syncrepl_client'
+    help='Print the installed version of syncrepl_client.'
 )
 argp.add_argument('--persist',
     action='store_true',
@@ -59,6 +59,11 @@ argp.add_argument('--nodir',
     action='store_true',
     required=False,
     help='Skip the directory dump when the refresh phase completes.'
+)
+argp.add_argument('--starttls',
+    action='store_true',
+    required=False,
+    help='Use STARTTLS after connection, but before binding (use with ldap schema only).'
 )
 argp.add_argument('url',
     type=str,
@@ -115,6 +120,7 @@ client = Syncrepl(data_path=args.prefix,
                         if args.persist is True
                         else SyncreplMode.REFRESH_ONLY
                        ),
+                  starttls=args.starttls,
                   trace_level=(5
                                if args.trace is True
                                else 0
