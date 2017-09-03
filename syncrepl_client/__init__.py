@@ -19,9 +19,6 @@
 #
 
 
-# For Python 2 support
-from __future__ import print_function
-
 from enum import Enum
 import ldap
 from ldap.ldapobject import SimpleLDAPObject
@@ -445,14 +442,12 @@ class Syncrepl(SyncreplConsumer, SimpleLDAPObject):
 
         # Bind to the server (this also triggers connection setup)
         if ldap_url.who is None:
-            print('Doing anonymous bind...')
             self.simple_bind_s()
         elif ldap_url.who == 'GSSAPI':
             import ldap.sasl
             sasl_bind = ldap.sasl.gssapi()
             self.sasl_interactive_bind_s('',sasl_bind)
         else:
-            print('Doing simple bind...')
             self.simple_bind_s(who=ldap_url.who, cred=ldap_url.cred)
 
         # Commit any settings changes, then do an optimize.
