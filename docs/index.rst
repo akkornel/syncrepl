@@ -153,7 +153,8 @@ code's execution, you should do these four things:
 4. Call :meth:`~syncrepl_client.Syncrepl.unbind`.  You're done!
 
 Lots more details are available in the :doc:`Requirements page
-</requirements>`, and see demo.py for a simple example.
+</requirements>`, and see syncrepl_client (which setup.py and pip install as a
+script) for a simple example.
 
 Copyright and License
 =====================

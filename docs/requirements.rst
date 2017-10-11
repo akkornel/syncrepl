@@ -42,7 +42,7 @@ The Syncrepl client has a number of direct and indirect requirements.
   - `RFC 4533`_: The Lightweight Directory Access Protocol (LDAP) Content
     Synchronization Operation.
 
-  The demo script also requires support for an additional RFC:
+  The demo script (syncrepl-client) also requires support for an additional RFC:
 
   - `RFC 4532`_: Lightweight Directory Access Protocol (LDAP) "Who am I?"
     Operation.
