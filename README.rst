@@ -149,7 +149,7 @@ code's execution, you should do these four things:
 4. Call `unbind`_.  You're done!
 
 Lots more details are available in `the Requirements page`_, and see
-`syncrepl-client`_ (which `setup.py` and pip installs as a script) for a simple
+`syncrepl-client`_ (which `setup.py`_ and pip installs as a script) for a simple
 example.
 
 .. _BaseCallback: http://syncrepl-client.readthedocs.io/en/latest/callbacks.html#syncrepl_client.callbacks.BaseCallback
@@ -157,7 +157,9 @@ example.
 .. _poll: http://syncrepl-client.readthedocs.io/en/latest/client.html#syncrepl_client.Syncrepl.poll
 .. _please_stop: http://syncrepl-client.readthedocs.io/en/latest/client.html#syncrepl_client.Syncrepl.please_stop
 .. _unbind: http://syncrepl-client.readthedocs.io/en/latest/client.html#syncrepl_client.Syncrepl.unbind
-.. _demo.py: https://github.com/akkornel/syncrepl/blob/master/syncrepl-client
+.. _syncrepl-client: https://github.com/akkornel/syncrepl/blob/master/syncrepl-client
+.. _setup.py: https://github.com/akkornel/syncrepl/blob/master/setup.py
+
 
 Copyright and License
 =====================
