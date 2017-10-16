@@ -81,7 +81,7 @@ def get_version():
         'syncrepl_client',
         '_version.py'
     )
-    with open(version_path) as file:
+    with open(version_path, encoding='utf8') as file:
         regex = r"^__version__ = '(.+)'$"
         matches = re.search(regex, file.read(), re.M)
         if matches:

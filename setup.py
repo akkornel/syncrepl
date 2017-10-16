@@ -80,7 +80,7 @@ install_requirements.append('pyasn1<0.3.1,>=0.2.2')
 
 # Have code pull the version number from _version.py
 def version():
-    with open('syncrepl_client/_version.py') as file:
+    with open('syncrepl_client/_version.py', encoding='utf8') as file:
         regex = r"^__version__ = '(.+)'$"
         matches = re.search(regex, file.read(), re.M)
         if matches:
@@ -91,7 +91,7 @@ def version():
 
 # Have code pull the long description from our README
 def readme():
-    with open('README.rst') as file:
+    with open('README.rst', encoding='utf8') as file:
         return file.read()
 
 
