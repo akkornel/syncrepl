@@ -182,7 +182,7 @@ class BaseCallback(object):
         pass
 
     @classmethod
-    def record_add(cls, dn, attrs):
+    def record_add(cls, dn, attrs, cursor):
         """Called to indicate the addition of a new LDAP record.
 
         :param str dn: The DN of the added record.
