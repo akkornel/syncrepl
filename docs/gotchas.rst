@@ -24,8 +24,9 @@ with [#f1]_.  In my (limited) time dealing with Syncrepl stuff, I have run in
 to a number of areas where I get behavior that is not what I expect, even
 though Syncrepl is doing exactly what it is supposed to do.
 
-.. [#f1] Source: Me; the LDAP admins of Stanford University IT, including Linda
-   Laubenheimer and Adam Lewenberg; and others.
+.. [#f1] Source: Me; the LDAP admins of Stanford University IT's Authentication
+   and Collaboration Solutions group, including Linda Laubenheimer and Adam
+   Lewenberg; and others.
 
 In this document, I plan on covering some of the weirdnesses I have discovered
 when dealing with Syncrepl.
