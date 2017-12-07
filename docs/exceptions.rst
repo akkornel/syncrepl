@@ -23,7 +23,7 @@ When a :class:`~syncrepl_client.Syncrepl` instance wants to tell you about
 a problem, it raises an exception.
 
 This document covers all of the exceptions thrown directly by
-:class:`~syncrepl_client.Syncrel`.  Note that you should also be prepared to
+:class:`~syncrepl_client.Syncrepl`.  Note that you should also be prepared to
 catch exceptions from :mod:`ldap`, as those exceptions are allowed to percolate
 up to the client, with only a few exceptions (for example, catching CANCELLED
 and TIMEOUT exceptions when they are expected).
