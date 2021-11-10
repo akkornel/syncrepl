@@ -96,18 +96,18 @@ The Syncrepl client has a number of direct and indirect requirements.
   CentOS 6 users, which have Python 2.6, should consider using Python 3.4 from
   EPEL.
 
-  When using Python 3, Python 3.3 or later is required because of `pyldap`_'s
+  When using Python 3, Python 3.3 or later is required because of `python-ldap`'s (formerly `pyldap`_)
   requirements (see `issue 117`_).  If you are on a system which has Python 3.2
   (such as Debian wheezy), consider using Python 2.7 instead.
 
 .. _issue 117: https://github.com/pyldap/pyldap/issues/117
 
-* `python-ldap`_ 99 or later (Python 2), or `pyldap`_ 2.4.37 or later
+* `python-ldap`_ 99 or later (Python 2), or `python-ldap`_ 3.0.0 or later
   (Python 3).
 
-  python-ldap is an object-oriented wrapper around `libldap`, and works in
-  Python 2 only.  pyldap is a fork of python-ldap, which adds support for
-  Python 3.
+  python-ldap is an object-oriented wrapper around `libldap`. pyldap is a fork of
+  python-ldap, which adds support for Python 3. pyldap has been merged back into
+  the python-ldap project.
 
   pyldap does also work with Python 2, but this software has not been tested
   with pyldap on Python 2.
